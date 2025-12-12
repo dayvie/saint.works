@@ -36,10 +36,8 @@ class VideoTiledBackgroundController {
   private needsTextureUpload = false;
   private animationHandle: number | null = null;
   private mediaQuery: MediaQueryList | null = null;
-  private visualViewport: VisualViewport | null = null;
   private handleResize: () => void;
   private handleOrientation: () => void;
-  private handleVisualViewportResize: () => void;
 
   constructor({ canvas, videos }: ControllerOptions) {
     this.canvas = canvas;
@@ -47,9 +45,6 @@ class VideoTiledBackgroundController {
     this.gl = this.canvas.getContext("webgl", { alpha: false, antialias: true });
     this.mediaQuery = typeof window !== "undefined"
       ? window.matchMedia("(orientation: portrait)")
-      : null;
-    this.visualViewport = typeof window !== "undefined" && window.visualViewport
-      ? window.visualViewport
       : null;
 
     this.prepareVideos();
@@ -68,13 +63,6 @@ class VideoTiledBackgroundController {
         void this.selectVideo();
       } else {
         this.enableFallbackVideo();
-      }
-    };
-
-    this.handleVisualViewportResize = () => {
-      // Use visual viewport height on mobile to account for browser UI
-      if (this.gl && this.visualViewport) {
-        this.resize();
       }
     };
   }
@@ -112,10 +100,6 @@ class VideoTiledBackgroundController {
         this.mediaQuery.removeListener(this.handleOrientation);
       }
     }
-    if (this.visualViewport) {
-      this.visualViewport.removeEventListener("resize", this.handleVisualViewportResize);
-      this.visualViewport.removeEventListener("scroll", this.handleVisualViewportResize);
-    }
 
     this.disposeGL();
     this.pauseVideo(this.activeVideo);
@@ -138,11 +122,6 @@ class VideoTiledBackgroundController {
       } else if (typeof this.mediaQuery.addListener === "function") {
         this.mediaQuery.addListener(this.handleOrientation);
       }
-    }
-    // Listen to visual viewport changes (handles mobile browser UI show/hide)
-    if (this.visualViewport) {
-      this.visualViewport.addEventListener("resize", this.handleVisualViewportResize);
-      this.visualViewport.addEventListener("scroll", this.handleVisualViewportResize);
     }
   }
 
@@ -366,27 +345,12 @@ class VideoTiledBackgroundController {
     if (!gl) return;
 
     const dpr = window.devicePixelRatio || 1;
-    
-    // Use visual viewport height on mobile to account for browser UI (URL bar, etc.)
-    let width = this.canvas.clientWidth;
-    let height = this.canvas.clientHeight;
-    
-    if (this.visualViewport) {
-      // Use visual viewport dimensions which account for mobile browser UI
-      width = this.visualViewport.width;
-      height = this.visualViewport.height;
-    } else {
-      // Fallback to client dimensions
-      width = this.canvas.clientWidth;
-      height = this.canvas.clientHeight;
-    }
-    
-    const canvasWidth = Math.round(width * dpr);
-    const canvasHeight = Math.round(height * dpr);
+    const width = Math.round(this.canvas.clientWidth * dpr);
+    const height = Math.round(this.canvas.clientHeight * dpr);
 
-    if (force || this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
-      this.canvas.width = canvasWidth;
-      this.canvas.height = canvasHeight;
+    if (force || this.canvas.width !== width || this.canvas.height !== height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
     }
 
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
