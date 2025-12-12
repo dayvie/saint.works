@@ -32,7 +32,7 @@ $overlay-margin: 50px;
 $overlay-margin-mobile: 20px;
 
 $bottom-bar-height: 67px;
-$bottom-bar-expanded-height: calc(100vh - 50px);
+$bottom-bar-expanded-height: calc(100dvh - 50px); // Use dynamic viewport height (accounts for mobile browser UI)
 $mobile-breakpoint: 900px;
 $bottom-bar-column-gap: 3rem;
 
@@ -130,7 +130,8 @@ body {
   cursor: pointer;
 
   &.expanded {
-    height: $bottom-bar-expanded-height;
+    height: calc(100vh - 50px); // Fallback for browsers that don't support dvh
+    height: $bottom-bar-expanded-height; // Dynamic viewport height (accounts for mobile browser UI)
   }
 }
 
