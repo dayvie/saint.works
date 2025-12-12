@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getAssetPath } from "../lib/constants";
 
 type VideoElements = {
   landscape: HTMLVideoElement | null;
@@ -488,7 +489,7 @@ export default function VideoTiledBackground() {
       <video
         ref={landscapeRef}
         className="bg-video"
-        src="/desktop-bg.mp4"
+        src={getAssetPath("desktop-bg.mp4")}
         muted
         loop
         playsInline
@@ -497,7 +498,7 @@ export default function VideoTiledBackground() {
       <video
         ref={portraitRef}
         className="bg-video"
-        src="/desktop-bg.mp4"
+        src={getAssetPath("desktop-bg.mp4")}
         muted
         loop
         playsInline

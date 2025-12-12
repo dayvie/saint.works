@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { getAssetPath } from "../lib/constants";
 
 function getLondonTime(): string {
   const now = new Date();
@@ -95,9 +96,9 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
     >
       <div className="bottom-bar-header">
         <div className="bottom-bar-content">
-          <div className="bottom-bar-col">Information</div>
+          <div className="bottom-bar-col info">Information</div>
           <div className="bottom-bar-col desktop-only">Links</div>
-          <div className="bottom-bar-col desktop-only">About</div>
+          <div className="bottom-bar-col desktop-only content">About</div>
           <div className="bottom-bar-col">{londonTime}</div>
         </div>
       </div>
@@ -110,8 +111,8 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
           <div className="bottom-bar-body-content">
             {/* Desktop Layout */}
             <div className="bottom-bar-desktop">
-              <div className="bottom-bar-section">
-                <p>© 2025 Saint.<br />Works LTD All Rights Reserved</p>
+              <div className="bottom-bar-section info">
+                <p>© 2025 Saint.Works LTD<br />All Rights Reserved</p>
               </div>
 
               <div className="bottom-bar-section">
@@ -126,7 +127,7 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
                 </div>
               </div>
 
-              <div className="bottom-bar-section">
+              <div className="bottom-bar-section content">
                   <p>Saint.Works is the design practice of Creative Director Matt Saint.</p>
                   <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic and idea-led approach to every project.</p>
                   <p>Saint.Works collaborates with a trusted network of designers, animators, strategists and producers, bringing together the right talent to create purposeful, impactful work.</p>
@@ -139,7 +140,7 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
 
               <div className="bottom-bar-section full-width">
                 <img 
-                  src="/img/sw-desk.svg" 
+                  src={getAssetPath("img/sw-desk.svg")} 
                   alt="Saint.Works Logo" 
                 />
               </div>
@@ -149,11 +150,11 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
 
             {/* Mobile Layout */}
             <div className="bottom-bar-mobile">
-              <div className="bottom-bar-section">
+              <div className="bottom-bar-section info">
                 <p>© 2025 Saint.<br />Works LTD All Rights Reserved</p>
               </div>
 
-              <div className="bottom-bar-section">
+              <div className="bottom-bar-section content">
                   <p>Saint.Works is the design practice of Creative Director Matt Saint.</p>
                   <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic and idea-led approach to every project.</p>
                   <p>Saint.Works collaborates with a trusted network of designers, animators, strategists and producers, bringing together the right talent to create purposeful, impactful work.</p>
@@ -175,13 +176,13 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
                   </a>
                 </div>
                 <div className="bottom-bar-links-grid-item">
-                  <div>London<br />United Kingdom</div>
+                  <div>London</div>
                 </div>
               </div>
 
               <div className="bottom-bar-section full-width">
                 <img 
-                  src="/img/sw-mob.svg" 
+                  src={getAssetPath("img/sw-mob.svg")} 
                   alt="Saint.Works Logo"
                 />
               </div>

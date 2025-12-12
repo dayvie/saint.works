@@ -1,10 +1,28 @@
 // Variables
+// Base path for GitHub Pages - must match next.config.ts basePath
+$base-path: "/saint.works";
+
 $color-dark: #080808;
 $color-bg-dark: #202020;
 $color-text-primary: #DCDCDC;
 $color-text-hover: rgba(255, 255, 255, 0.7);
 
-$font-family: "Helvetica Neue", Arial, sans-serif;
+$font-size: 0.9rem;
+$font-family: "Unica77 LL", "Helvetica Neue", Arial, sans-serif;
+
+// Font Face Declaration
+@font-face {
+  font-family: "Unica77 LL";
+  src: url("#{$base-path}/Web Fonts/b785851e8b09ba75618fcc06d8bcae6b.eot");
+  src: url("#{$base-path}/Web Fonts/b785851e8b09ba75618fcc06d8bcae6b.eot?#iefix") format("embedded-opentype"),
+      url("#{$base-path}/Web Fonts/b785851e8b09ba75618fcc06d8bcae6b.woff") format("woff"),
+      url("#{$base-path}/Web Fonts/b785851e8b09ba75618fcc06d8bcae6b.woff2") format("woff2"),
+      url("#{$base-path}/Web Fonts/b785851e8b09ba75618fcc06d8bcae6b.ttf") format("truetype"),
+      url("#{$base-path}/Web Fonts/b785851e8b09ba75618fcc06d8bcae6b.svg#Unica77 LL") format("svg");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 $overlay-max-width: 890px;
 $overlay-margin: 50px;
@@ -12,7 +30,7 @@ $overlay-margin-mobile: 20px;
 
 $bottom-bar-height: 67px;
 $bottom-bar-expanded-height: calc(100vh - 50px);
-$mobile-breakpoint: 750px;
+$mobile-breakpoint: 900px;
 $bottom-bar-column-gap: 3rem;
 
 // Root
@@ -85,7 +103,7 @@ body {
 // Overlay
 .overlay {
   position: relative;
-  background-image: url("/img/sw-logo.svg");
+  background-image: url("#{$base-path}/img/sw-logo.svg");
   background-repeat: repeat-y;
   background-position: 0 25%;
   background-size: contain;
@@ -129,8 +147,14 @@ body {
 }
 
 .bottom-bar-col {
-  font-size: 1rem;
+  font-size: $font-size;
   color: $color-text-primary;
+  &.content {
+    min-width: 313px;
+  }
+  &.info {
+    min-width: 156px;
+  }
 }
 
 .bottom-bar-body {
@@ -141,7 +165,7 @@ body {
 }
 
 .bottom-bar-body-content {
-  padding: 3rem $overlay-margin;
+  padding: 0 $overlay-margin 1rem $overlay-margin;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -152,6 +176,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: $bottom-bar-column-gap;
   flex: 1;
+  
 }
 
 .bottom-bar-mobile {
@@ -162,16 +187,9 @@ body {
 
 .bottom-bar-section {
   color: $color-text-primary;
-
-  h3 {
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
+  
   p {
-    font-size: 1rem;
+    font-size: $font-size;
     line-height: 1.6;
     margin-top: 0;
     margin-bottom: 1rem;
@@ -199,17 +217,27 @@ body {
       height: auto;
     }
   }
+
+  &.content {
+    min-width: 313px;
+    p {
+      margin-bottom: 0.5rem;
+    }
+  }
+  &.info {
+    min-width: 156px;
+  }
 }
 
 .bottom-bar-links {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.4rem;
 
   a {
     color: $color-text-primary;
     text-decoration: none !important;
-    font-size: 1rem;
+    font-size: $font-size;
     transition: opacity 0.2s ease;
 
     &:hover {
@@ -227,7 +255,7 @@ body {
   &-item {
     a {
       color: $color-text-primary;
-      font-size: 1rem;
+      font-size: $font-size;
       transition: opacity 0.2s ease;
       text-decoration: none !important;
 
@@ -245,8 +273,17 @@ body {
   }
 
   .bottom-bar-content {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 3fr 1fr;
     gap: 1rem;
+  }
+
+  .bottom-bar-section {
+    &.content {
+      width: 260px;
+    }
+    &.info {
+      min-width: 156px;
+    }
   }
 
   .desktop-only {
@@ -260,7 +297,11 @@ body {
   .bottom-bar-mobile {
     display: flex;
     flex-direction: column;
-    padding: 2rem $overlay-margin-mobile;
+    padding: 0 $overlay-margin-mobile 1rem;
+    gap: 3%;
+    .bottom-bar-section:first-child {
+      margin-top: 6%;
+    }
   }
 
   .bottom-bar-section {
@@ -277,7 +318,7 @@ body {
     margin-top: 0;
 
     &-item {
-      font-size: 0.9rem;
+      font-size: $font-size;
     }
   }
 }
