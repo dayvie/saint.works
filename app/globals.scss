@@ -108,7 +108,7 @@ body {
   position: relative;
   background-image: url("#{$base-path}/img/sw-logo.svg");
   background-repeat: repeat-y;
-  background-position: 0 25%;
+  background-position: center 25%;
   background-size: contain;
   max-width: $overlay-max-width;
   margin: 0 $overlay-margin;
