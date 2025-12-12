@@ -1,6 +1,9 @@
 // Variables
-// Base path for GitHub Pages - must match next.config.ts basePath
-$base-path: "/saint.works";
+// Base path for GitHub Pages
+// This is set at build time via environment variable
+// In dev: empty string (no basePath)
+// In prod: "/saint.works" (matches GitHub Pages repo name)
+$base-path: "";
 
 $color-dark: #080808;
 $color-bg-dark: #202020;
