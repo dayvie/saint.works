@@ -5,6 +5,11 @@
 const isProduction = process.env.GITHUB_PAGES === "true";
 const basePath = isProduction ? "/saint.works" : "";
 
+// Log for debugging (will show in build output)
+console.log("🔧 Build Configuration:");
+console.log("  GITHUB_PAGES:", process.env.GITHUB_PAGES);
+console.log("  basePath:", basePath);
+
 // Export basePath for use in other files
 process.env.NEXT_PUBLIC_BASE_PATH = basePath;
 

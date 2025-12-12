@@ -1,9 +1,9 @@
 // Variables
 // Base path for GitHub Pages
-// This is set at build time via environment variable
+// This is injected at build time via next.config.mjs sassOptions
 // In dev: empty string (no basePath)
 // In prod: "/saint.works" (matches GitHub Pages repo name)
-$base-path: "";
+// DO NOT define $base-path here - it's injected via sassOptions.additionalData
 
 $color-dark: #080808;
 $color-bg-dark: #202020;
