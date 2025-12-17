@@ -25,6 +25,7 @@ interface BottomBarProps {
 export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps) {
   const [londonTime, setLondonTime] = useState(getLondonTime());
   const [isMobile, setIsMobile] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const lastHoverTimeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -70,44 +71,64 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
     if (isMobile && timeSinceHover < 300) {
       return;
     }
-    setIsExpanded(!isExpanded);
+    // Toggle full expansion on click
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+    // Clear hover state when expanding
+    if (newExpanded) {
+      setIsHovered(false);
+    }
   };
 
   const handleMouseEnter = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent page hover from collapsing
     lastHoverTimeRef.current = Date.now();
-    setIsExpanded(true);
+    // On desktop, show hover state (85px) if not fully expanded
+    if (!isMobile && !isExpanded) {
+      setIsHovered(true);
+    }
   };
 
   const handleMouseLeave = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent page hover from interfering
     // On mobile, don't auto-collapse on mouse leave (it fires after tap)
-    if (!isMobile) {
-      setIsExpanded(false);
+    if (!isMobile && !isExpanded) {
+      setIsHovered(false);
     }
   };
 
   return (
     <div
-      className={`bottom-bar ${isExpanded ? "expanded" : ""}`}
+      className={`bottom-bar ${isExpanded ? "expanded" : ""} ${isHovered ? "hovered" : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleToggle}
     >
       <div className="bottom-bar-header">
-        <div className="bottom-bar-content">
-          <div className="bottom-bar-col info">Information</div>
-          <div className="bottom-bar-col desktop-only">Links</div>
-          <div className="bottom-bar-col desktop-only content">About</div>
-          <div className="bottom-bar-col">{londonTime}</div>
+        <div className="bottom-bar-arrow-container">
+          <svg 
+            className="bottom-bar-arrow-icon"
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path 
+              d="M12 5V19M12 19L19 12M12 19L5 12" 
+              stroke="#888" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
       </div>
 
-      {isExpanded && (
-        <div 
-          className="bottom-bar-body"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div 
+        className="bottom-bar-body"
+        onClick={(e) => e.stopPropagation()}
+      >
           <div className="bottom-bar-body-content">
             {/* Desktop Layout */}
             <div className="bottom-bar-desktop">
@@ -190,7 +211,6 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 }
