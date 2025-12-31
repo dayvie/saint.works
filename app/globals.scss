@@ -474,8 +474,8 @@ body {
   }
 
   .bottom-bar-links-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
+    display: flex;
+    gap: 1.5rem;
     margin-top: 0;
 
     &-item {
