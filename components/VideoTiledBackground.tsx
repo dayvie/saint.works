@@ -3,24 +3,46 @@
 import { useEffect, useRef } from "react";
 import { getAssetPath } from "../lib/constants";
 
+/**
+ * Type definitions for video elements
+ * Contains references to landscape and portrait orientation video elements
+ */
 type VideoElements = {
   landscape: HTMLVideoElement | null;
   portrait: HTMLVideoElement | null;
 };
 
+/**
+ * Options passed to VideoTiledBackgroundController constructor
+ */
 type ControllerOptions = {
   canvas: HTMLCanvasElement;
   videos: VideoElements;
 };
 
+/**
+ * VideoTiledBackgroundController
+ * 
+ * Manages WebGL-based tiled video background rendering.
+ * Uses WebGL shaders to create a seamless tiled pattern from video frames.
+ * Falls back to standard HTML5 video if WebGL is unavailable.
+ */
 class VideoTiledBackgroundController {
+  // Canvas element for WebGL rendering
   private canvas: HTMLCanvasElement;
+  // Video element references (landscape and portrait orientations)
   private videos: VideoElements;
+  // WebGL rendering context
   private gl: WebGLRenderingContext | null;
+  // Compiled WebGL shader program
   private program: WebGLProgram | null = null;
+  // Buffer containing vertex positions for the fullscreen quad
   private positionBuffer: WebGLBuffer | null = null;
+  // Texture used to store video frames
   private texture: WebGLTexture | null = null;
+  // Location of the position attribute in the shader program
   private positionLocation: number | null = null;
+  // Uniform locations for shader parameters
   private uniforms: {
     canvasSize: WebGLUniformLocation | null;
     displayVideoSize: WebGLUniformLocation | null;
@@ -32,32 +54,48 @@ class VideoTiledBackgroundController {
     flipY: null,
     texture: null,
   };
+  // Currently active video element being used for rendering
   private activeVideo: HTMLVideoElement | null = null;
+  // Flag to indicate if video texture needs to be uploaded to GPU
   private needsTextureUpload = false;
+  // RequestAnimationFrame handle for the render loop
   private animationHandle: number | null = null;
+  // Media query for orientation changes
   private mediaQuery: MediaQueryList | null = null;
+  // Resize event handler
   private handleResize: () => void;
+  // Orientation change event handler
   private handleOrientation: () => void;
 
+  /**
+   * Constructor
+   * Initializes the controller with canvas and video elements.
+   * Sets up WebGL context and prepares event handlers.
+   */
   constructor({ canvas, videos }: ControllerOptions) {
     this.canvas = canvas;
     this.videos = videos;
+    // Get WebGL context without alpha channel for better performance
     this.gl = this.canvas.getContext("webgl", { alpha: false, antialias: true });
+    // Set up media query to detect orientation changes
     this.mediaQuery = typeof window !== "undefined"
       ? window.matchMedia("(orientation: portrait)")
       : null;
 
     this.prepareVideos();
 
+    // Handle window resize - update WebGL canvas size and reselect video if needed
     this.handleResize = () => {
       if (this.gl) {
         this.resize();
         void this.selectVideo();
       } else {
+        // If WebGL unavailable, use fallback video
         this.enableFallbackVideo();
       }
     };
 
+    // Handle orientation changes - reselect appropriate video (landscape/portrait)
     this.handleOrientation = () => {
       if (this.gl) {
         void this.selectVideo();
@@ -67,6 +105,11 @@ class VideoTiledBackgroundController {
     };
   }
 
+  /**
+   * Initialize the controller
+   * Attaches event listeners and initializes WebGL.
+   * Falls back to standard video if WebGL is unavailable or fails.
+   */
   async initialize() {
     this.attachEvents();
 
@@ -86,6 +129,10 @@ class VideoTiledBackgroundController {
     }
   }
 
+  /**
+   * Cleanup and dispose of resources
+   * Stops animation loop, removes event listeners, and cleans up WebGL resources.
+   */
   dispose() {
     if (this.animationHandle !== null) {
       cancelAnimationFrame(this.animationHandle);
@@ -105,6 +152,10 @@ class VideoTiledBackgroundController {
     this.pauseVideo(this.activeVideo);
   }
 
+  /**
+   * Prepare video elements for playback
+   * Sets up videos to be muted and play inline (required for autoplay in most browsers).
+   */
   private prepareVideos() {
     Object.values(this.videos).forEach((video) => {
       if (!video) return;
@@ -114,6 +165,9 @@ class VideoTiledBackgroundController {
     });
   }
 
+  /**
+   * Attach event listeners for resize and orientation changes
+   */
   private attachEvents() {
     window.addEventListener("resize", this.handleResize);
     if (this.mediaQuery) {
@@ -125,6 +179,11 @@ class VideoTiledBackgroundController {
     }
   }
 
+  /**
+   * Initialize WebGL resources
+   * Creates shader program, buffers, and texture.
+   * Selects appropriate video and starts render loop.
+   */
   private async initGL() {
     this.createProgram();
     this.createBuffers();
@@ -134,6 +193,10 @@ class VideoTiledBackgroundController {
     this.renderFrame();
   }
 
+  /**
+   * Dispose of WebGL resources
+   * Cleans up textures, buffers, and shader programs.
+   */
   private disposeGL() {
     if (!this.gl) return;
 
@@ -152,10 +215,19 @@ class VideoTiledBackgroundController {
     }
   }
 
+  /**
+   * Create and compile WebGL shader program
+   * 
+   * Vertex shader: Transforms 2D positions and generates UV coordinates
+   * Fragment shader: Implements tiling logic - calculates which tile to sample
+   *                  and maps UV coordinates to create seamless tiling pattern
+   */
   private createProgram() {
     const gl = this.gl;
     if (!gl) return;
 
+    // Vertex shader: Simple pass-through that generates UV coordinates
+    // Takes position from -1 to 1 and converts to UV 0 to 1
     const vertexSrc = `
       attribute vec2 a_position;
       varying vec2 v_uv;
@@ -166,6 +238,9 @@ class VideoTiledBackgroundController {
       }
     `;
 
+    // Fragment shader: Implements tiling algorithm
+    // Calculates tile indices and local coordinates within each tile
+    // Samples the video texture at the correct UV coordinates to create seamless tiling
     const fragmentSrc = `
       precision mediump float;
 
@@ -176,12 +251,17 @@ class VideoTiledBackgroundController {
       varying vec2 v_uv;
 
       void main() {
+        // Calculate offset based on canvas and video sizes
         vec2 offset = (v_uv - 0.5) * u_canvasSize / u_displayVideoSize;
         vec2 scaled = offset + 0.5;
+        // Determine which tile we're in
         vec2 tileIndex = floor(scaled);
+        // Get local coordinates within the tile (0-1 range)
         vec2 localCoord = scaled - tileIndex;
         vec2 videoUV = localCoord;
+        // Flip Y coordinate if needed (video textures are often flipped)
         videoUV.y = (u_flipY > 0.5) ? 1.0 - videoUV.y : videoUV.y;
+        // Clamp to avoid edge sampling issues
         videoUV = clamp(videoUV, 0.001, 0.999);
         gl_FragColor = texture2D(u_texture, videoUV);
       }
@@ -225,6 +305,10 @@ class VideoTiledBackgroundController {
     gl.enableVertexAttribArray(this.positionLocation);
   }
 
+  /**
+   * Create vertex buffer for fullscreen quad
+   * Defines two triangles that cover the entire screen (-1 to 1 in both axes).
+   */
   private createBuffers() {
     const gl = this.gl;
     if (!gl) return;
@@ -235,13 +319,15 @@ class VideoTiledBackgroundController {
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    // Two triangles forming a fullscreen quad
+    // Coordinates range from -1 to 1 (normalized device coordinates)
     const positions = new Float32Array([
-      -1, -1,
-      1, -1,
-      -1, 1,
-      -1, 1,
-      1, -1,
-      1, 1,
+      -1, -1,  // Bottom-left
+      1, -1,   // Bottom-right
+      -1, 1,   // Top-left
+      -1, 1,   // Top-left (duplicate for second triangle)
+      1, -1,   // Bottom-right (duplicate)
+      1, 1,    // Top-right
     ]);
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
     this.positionBuffer = buffer;
@@ -251,6 +337,10 @@ class VideoTiledBackgroundController {
     }
   }
 
+  /**
+   * Create WebGL texture for video frames
+   * Sets up texture parameters for linear filtering and edge clamping.
+   */
   private createTexture() {
     const gl = this.gl;
     if (!gl) return;
@@ -268,6 +358,10 @@ class VideoTiledBackgroundController {
     this.texture = texture;
   }
 
+  /**
+   * Bind position buffer and set up vertex attribute
+   * Configures how vertex data is read from the buffer.
+   */
   private bindPositionBuffer(positionLocation: number) {
     const gl = this.gl;
     if (!gl || !this.positionBuffer) return;
@@ -275,6 +369,12 @@ class VideoTiledBackgroundController {
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
   }
 
+  /**
+   * Compile a WebGL shader from source code
+   * @param type - Shader type (VERTEX_SHADER or FRAGMENT_SHADER)
+   * @param source - Shader source code as string
+   * @returns Compiled shader or null on failure
+   */
   private compileShader(type: number, source: string) {
     const gl = this.gl;
     if (!gl) return null;
@@ -294,10 +394,16 @@ class VideoTiledBackgroundController {
     return shader;
   }
 
+  /**
+   * Select appropriate video based on viewport orientation
+   * Chooses landscape or portrait video based on aspect ratio.
+   * Prepares video for WebGL rendering.
+   */
   private async selectVideo() {
     const { landscape, portrait } = this.videos;
     if (!landscape && !portrait) return;
 
+    // Determine which video to use based on viewport aspect ratio
     const viewportRatio = window.innerWidth / window.innerHeight || 1;
     const useLandscape = viewportRatio >= 1;
     const target = useLandscape ? landscape : portrait;
@@ -307,22 +413,30 @@ class VideoTiledBackgroundController {
       return;
     }
 
+    // Skip if already using this video
     if (this.activeVideo === target) return;
 
+    // Switch videos
     this.pauseVideo(this.activeVideo);
     this.activeVideo = target;
 
     await this.ensureVideoReady(target);
     await this.playVideo(target);
 
+    // Remove fallback class (used when WebGL is unavailable)
     target.classList.remove("bg-video-fallback");
     if (landscape && landscape !== target) landscape.classList.remove("bg-video-fallback");
     if (portrait && portrait !== target) portrait.classList.remove("bg-video-fallback");
 
+    // Mark texture for upload on next frame
     this.needsTextureUpload = true;
     this.resize(true);
   }
 
+  /**
+   * Enable fallback video mode (when WebGL is unavailable)
+   * Uses standard HTML5 video with CSS styling instead of WebGL rendering.
+   */
   private enableFallbackVideo() {
     const { landscape, portrait } = this.videos;
     const viewportRatio = window.innerWidth / window.innerHeight || 1;
@@ -340,10 +454,16 @@ class VideoTiledBackgroundController {
     }
   }
 
+  /**
+   * Resize WebGL canvas to match display size
+   * Accounts for device pixel ratio for high-DPI displays.
+   * @param force - Force resize even if dimensions haven't changed
+   */
   private resize(force = false) {
     const gl = this.gl;
     if (!gl) return;
 
+    // Account for device pixel ratio (retina displays)
     const dpr = window.devicePixelRatio || 1;
     const width = Math.round(this.canvas.clientWidth * dpr);
     const height = Math.round(this.canvas.clientHeight * dpr);
@@ -353,10 +473,16 @@ class VideoTiledBackgroundController {
       this.canvas.height = height;
     }
 
+    // Update viewport and uniforms
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.updateUniforms();
   }
 
+  /**
+   * Update shader uniforms with current canvas and video dimensions
+   * Calculates scaling factors for tiling based on video and canvas sizes.
+   * Adjusts for mobile devices with different scaling behavior.
+   */
   private updateUniforms() {
     if (!this.gl || !this.activeVideo || !this.uniforms.canvasSize) return;
 
@@ -365,9 +491,10 @@ class VideoTiledBackgroundController {
     const videoHeight = this.activeVideo.videoHeight || 1;
 
     const canvasSize = [this.canvas.width, this.canvas.height] as const;
+    // Calculate scale to cover entire canvas (like CSS object-fit: cover)
     const coverScale = Math.max(canvasSize[0] / videoWidth, canvasSize[1] / videoHeight);
     
-    // Better mobile detection: check for touch capability or mobile user agent
+    // Mobile detection: check for touch capability or mobile user agent
     const hasTouch = 
       'ontouchstart' in window ||
       (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
@@ -376,9 +503,12 @@ class VideoTiledBackgroundController {
     );
     const isMobile = hasTouch || isMobileUA || window.innerWidth <= 640;
     
+    // Limit video width scaling - mobile uses full width, desktop uses 75%
+    // This prevents tiles from being too large on wide screens
     const widthLimitScale = isMobile 
       ? canvasSize[0] / videoWidth 
-      : (canvasSize[0] * 0.75) / videoWidth;
+      : (canvasSize[0] * 1) / videoWidth;
+    // Use the smaller scale to ensure video fits within limits
     const scale = Math.min(coverScale, widthLimitScale > 0 ? widthLimitScale : coverScale);
     const displayVideoSize = [videoWidth * scale, videoHeight * scale];
 
@@ -388,20 +518,30 @@ class VideoTiledBackgroundController {
     gl.uniform1i(this.uniforms.texture, 0);
   }
 
+  /**
+   * Main render loop
+   * Called every frame via requestAnimationFrame.
+   * Uploads video frames to texture and renders tiled pattern.
+   */
   private renderFrame = () => {
     const gl = this.gl;
 
+    // Wait for WebGL, program, and video to be ready
     if (!gl || !this.program || !this.activeVideo) {
       this.animationHandle = requestAnimationFrame(this.renderFrame);
       return;
     }
 
+    // Clear canvas to black
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+    // Bind video texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
+    // Upload new video frame to texture if needed
+    // Only uploads when video has a new frame or forced by needsTextureUpload flag
     if (this.needsTextureUpload || this.videoHasNewFrame()) {
       this.needsTextureUpload = false;
       gl.texImage2D(
@@ -414,19 +554,33 @@ class VideoTiledBackgroundController {
       );
     }
 
+    // Update uniforms and draw
     this.updateUniforms();
+    // Draw 6 vertices (2 triangles forming fullscreen quad)
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+    // Schedule next frame
     this.animationHandle = requestAnimationFrame(this.renderFrame);
   };
 
+  /**
+   * Check if video has a new frame available
+   * @returns true if video is playing and has new frame data
+   */
   private videoHasNewFrame() {
     if (!this.activeVideo) return false;
     return !this.activeVideo.paused && !this.activeVideo.ended;
   }
 
+  /**
+   * Ensure video is loaded and ready
+   * Waits for video metadata to be available before proceeding.
+   * @param video - Video element to prepare
+   * @returns Promise that resolves when video is ready
+   */
   private ensureVideoReady(video: HTMLVideoElement) {
     return new Promise<void>((resolve) => {
+      // readyState >= 2 means we have metadata (dimensions available)
       if (video.readyState >= 2 && video.videoWidth && video.videoHeight) {
         resolve();
         return;
@@ -442,6 +596,11 @@ class VideoTiledBackgroundController {
     });
   }
 
+  /**
+   * Play video element
+   * Handles autoplay restrictions gracefully.
+   * @param video - Video element to play
+   */
   private async playVideo(video: HTMLVideoElement | null) {
     if (!video) return;
     try {
@@ -451,12 +610,25 @@ class VideoTiledBackgroundController {
     }
   }
 
+  /**
+   * Pause video element
+   * @param video - Video element to pause
+   */
   private pauseVideo(video: HTMLVideoElement | null) {
     if (!video || video.paused) return;
     video.pause();
   }
 }
 
+/**
+ * VideoTiledBackground Component
+ * 
+ * React component that renders a tiled video background using WebGL.
+ * Automatically selects landscape or portrait video based on viewport.
+ * Falls back to standard HTML5 video if WebGL is unavailable.
+ * 
+ * Uses two video elements (landscape and portrait) and a canvas for WebGL rendering.
+ */
 export default function VideoTiledBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const landscapeRef = useRef<HTMLVideoElement | null>(null);
@@ -466,6 +638,7 @@ export default function VideoTiledBackground() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Create controller instance
     const controller = new VideoTiledBackgroundController({
       canvas,
       videos: {
@@ -474,10 +647,12 @@ export default function VideoTiledBackground() {
       },
     });
 
+    // Initialize controller (sets up WebGL or falls back to video)
     controller.initialize().catch((error) => {
       console.error("Video background initialization failed:", error);
     });
 
+    // Cleanup on unmount
     return () => {
       controller.dispose();
     };
@@ -485,7 +660,9 @@ export default function VideoTiledBackground() {
 
   return (
     <>
+      {/* WebGL canvas for tiled video rendering */}
       <canvas ref={canvasRef} id="gl-background" aria-hidden="true" />
+      {/* Landscape orientation video (hidden by default, shown when WebGL unavailable) */}
       <video
         ref={landscapeRef}
         className="bg-video"
@@ -495,6 +672,7 @@ export default function VideoTiledBackground() {
         playsInline
         preload="auto"
       />
+      {/* Portrait orientation video (hidden by default, shown when WebGL unavailable) */}
       <video
         ref={portraitRef}
         className="bg-video"
