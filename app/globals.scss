@@ -136,7 +136,7 @@ body {
 // Overlay
 .overlay {
   position: fixed;
-  background-image: url("#{$base-path}/img/sw-logo.svg");
+  background-image: url("#{$base-path}/img/sw-logo.png");
   background-repeat: repeat-y;
   background-position: center 25%;
   background-size: contain;
@@ -245,7 +245,7 @@ body {
     display: block;
     border:1px solid $color-text-primary;
     border-width: 0px 1px 1px 0px;
-    transform: translate(0,-40%) rotate(45deg);
+    transform: translate(0,-30%) rotate(45deg);
   }
 }
 
