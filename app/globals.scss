@@ -10,7 +10,7 @@ $color-bg-dark: #202020;
 $color-text-primary: #DCDCDC;
 $color-text-hover: rgba(255, 255, 255, 0.7);
 
-$font-size: 0.9rem;
+$font-size: 1rem;
 $font-family: "Unica77 LL", "Helvetica Neue", Arial, sans-serif;
 
 // Font Face Declaration
@@ -34,7 +34,8 @@ $overlay-margin-mobile: 20px;
 $bottom-bar-height: 45px;
 $bottom-bar-hover-height: 85px;
 $bottom-bar-expanded-height: calc(100dvh - 50px); // Use dynamic viewport height (accounts for mobile browser UI)
-$mobile-breakpoint: 900px;
+$bottom-bar-expanded-height-hover-close: calc(100dvh - $bottom-bar-hover-height); // Use dynamic viewport height (accounts for mobile browser UI)
+$mobile-breakpoint: 940px;
 $bottom-bar-column-gap: 3rem;
 
 // Root
@@ -104,6 +105,14 @@ body {
   height: 100vh;
   display: block;
   object-fit: cover;
+  
+  &.hidden {
+    display: none;
+  }
+  
+  .page:has(.bottom-bar.expanded) & {
+    cursor: pointer;
+  }
 }
 
 .bg-video {
@@ -132,7 +141,6 @@ body {
   background-position: center 25%;
   background-size: contain;
   max-width: $overlay-max-width;
-  margin: 0 $overlay-margin;
   width: 100%;
   height: 100vh;
   flex: 1;
@@ -140,6 +148,21 @@ body {
   top: 0;
   left: 50%;
   transform: translate(-50%);
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  @media (max-width: $mobile-breakpoint) {
+    max-width: calc(100% - $overlay-margin-mobile * 2);
+    margin: 0 $overlay-margin-mobile;
+    left: 0;
+    transform: none;
+  }
+  
+  // Hover styles only apply on devices that support hover (desktop)
+  @media (hover: hover) {
+    .page:has(.bottom-bar.expanded) & {
+      cursor: pointer;
+    }
+  }
 }
 
 // Bottom Bar
@@ -157,13 +180,24 @@ body {
   flex-shrink: 0;
   width: 100%;
 
-  &.hovered:not(.expanded) {
-    height: $bottom-bar-hover-height;
+  // Hover styles only apply on devices that support hover (desktop)
+  @media (hover: hover) {
+    &.hovered:not(.expanded) {
+      height: $bottom-bar-hover-height;
+    }
   }
 
   &.expanded {
     height: calc(100vh - 50px); // Fallback for browsers that don't support dvh
     height: $bottom-bar-expanded-height; // Dynamic viewport height (accounts for mobile browser UI)
+    cursor: default;
+    
+    // Hover-close only applies on devices that support hover (desktop)
+    @media (hover: hover) {
+      &.hover-close {
+        height: $bottom-bar-expanded-height-hover-close;
+      }
+    }
   }
 }
 
@@ -190,6 +224,10 @@ body {
 }
 
 .bottom-bar-arrow-container {
+  &.hidden {
+    opacity: 0;
+  }
+  transition: opacity 0.2s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,17 +236,46 @@ body {
 }
 
 .bottom-bar-arrow-icon {
-  width: 24px;
-  height: 24px;
-  animation: arrowBounce 3s ease-in-out infinite;
+  transform: translateY(0);
+  // Total duration: 3.5s (pull up slow, fire down fast, bounce back, then delay) + 1s initial delay
+  animation: arrowBounce 3.5s ease-in-out 1s infinite;
+  .icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+    border:1px solid $color-text-primary;
+    border-width: 0px 1px 1px 0px;
+    transform: translate(0,-40%) rotate(45deg);
+  }
 }
 
 @keyframes arrowBounce {
-  0%, 100% {
+  0% {
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(4px);
+  // Slowly pull up (like pulling back an elastic) - takes 45% of animation
+  // Smooth, gradual pull
+  30% {
+    transform: translateY(-3px);
+  }
+  45% {
+    transform: translateY(-4px);
+  }
+  // Quickly fire down - happens in just 3% (very fast snap)
+  48% {
+    transform: translateY(12px);
+  }
+  // Bounce back with elastic effect
+  52% {
+    transform: translateY(-5px);
+  }
+  56% {
+    transform: translateY(-3px);
+  }
+  
+  // Return to rest and hold
+  56%, 100% {
+    transform: translateY(0);
   }
 }
 
@@ -257,9 +324,13 @@ body {
 
 .bottom-bar-desktop {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: $bottom-bar-column-gap;
+  grid-template-columns: repeat(1, 1fr);
   flex: 1;
+  .flex {
+    display: inline-flex;
+    gap: $bottom-bar-column-gap;
+    justify-content: space-between;
+  }
   
 }
 
@@ -271,12 +342,13 @@ body {
 
 .bottom-bar-section {
   color: $color-text-primary;
+  width: 175px;
   
   p {
     font-size: $font-size;
     line-height: 1.6;
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
   }
 
   a {
@@ -299,17 +371,22 @@ body {
     img {
       width: 100%;
       height: auto;
+      image-rendering: crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
     }
   }
 
   &.content {
-    min-width: 313px;
+    width: 313px;
     p {
       margin-bottom: 0.5rem;
     }
   }
-  &.info {
-    min-width: 156px;
+  &.links {
+    width: inherit;
+  }
+  &.location {
+    width: calc(100%/12 * 2);
   }
 }
 
@@ -352,6 +429,9 @@ body {
 
 // Mobile Styles
 @media (max-width: $mobile-breakpoint) {
+  .bottom-bar-section {
+    width: 100%;
+  }
   .bottom-bar-header {
     padding: 0 $overlay-margin-mobile;
   }
@@ -363,10 +443,10 @@ body {
 
   .bottom-bar-section {
     &.content {
-      width: 260px;
+      width: calc(100%/9 * 7);
     }
     &.info {
-      min-width: 156px;
+      width: 100%;
     }
   }
 
@@ -383,9 +463,6 @@ body {
     flex-direction: column;
     padding: 0 $overlay-margin-mobile 1rem;
     gap: 3%;
-    .bottom-bar-section:first-child {
-      margin-top: 6%;
-    }
   }
 
   .bottom-bar-section {

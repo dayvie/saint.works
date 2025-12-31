@@ -20,9 +20,10 @@ function getLondonTime(): string {
 interface BottomBarProps {
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
+  isGlBackgroundHovered?: boolean;
 }
 
-export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps) {
+export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHovered = false }: BottomBarProps) {
   const [londonTime, setLondonTime] = useState(getLondonTime());
   const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -65,63 +66,54 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
     return () => clearInterval(interval);
   }, []);
 
-  const handleToggle = () => {
+  const handleHeaderClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     // On mobile, if hover just fired (within 300ms), ignore the click to prevent double-trigger
+    // This shouldn't happen on mobile since we disable hover, but keeping as safety
     const timeSinceHover = Date.now() - lastHoverTimeRef.current;
     if (isMobile && timeSinceHover < 300) {
       return;
     }
-    // Toggle full expansion on click
-    const newExpanded = !isExpanded;
-    setIsExpanded(newExpanded);
-    // Clear hover state when expanding
-    if (newExpanded) {
+    // Only open if closed, do nothing if already open
+    if (!isExpanded) {
+      setIsExpanded(true);
       setIsHovered(false);
     }
   };
 
   const handleMouseEnter = (e: React.MouseEvent) => {
+    // Only handle hover on desktop (non-touch devices)
+    if (isMobile) return;
     e.stopPropagation(); // Prevent page hover from collapsing
     lastHoverTimeRef.current = Date.now();
     // On desktop, show hover state (85px) if not fully expanded
-    if (!isMobile && !isExpanded) {
+    if (!isExpanded) {
       setIsHovered(true);
     }
   };
 
   const handleMouseLeave = (e: React.MouseEvent) => {
+    // Only handle hover on desktop (non-touch devices)
+    if (isMobile) return;
     e.stopPropagation(); // Prevent page hover from interfering
-    // On mobile, don't auto-collapse on mouse leave (it fires after tap)
-    if (!isMobile && !isExpanded) {
+    if (!isExpanded) {
       setIsHovered(false);
     }
   };
 
   return (
     <div
-      className={`bottom-bar ${isExpanded ? "expanded" : ""} ${isHovered ? "hovered" : ""}`}
+      className={`bottom-bar ${isExpanded ? "expanded" : ""} ${isHovered ? "hovered" : ""} ${isGlBackgroundHovered ? "hover-close" : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={handleToggle}
+      onClick={handleHeaderClick}
+      onTouchStart={handleHeaderClick}
     >
-      <div className="bottom-bar-header">
-        <div className="bottom-bar-arrow-container">
-          <svg 
-            className="bottom-bar-arrow-icon"
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path 
-              d="M12 5V19M12 19L19 12M12 19L5 12" 
-              stroke="#888" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-          </svg>
+      <div className="bottom-bar-header" >
+        <div className={"bottom-bar-arrow-container " + (isExpanded ? "hidden" : "")}>
+          <div className="bottom-bar-arrow-icon">
+            <div className="icon"></div>
+          </div>
         </div>
       </div>
 
@@ -132,31 +124,33 @@ export default function BottomBar({ isExpanded, setIsExpanded }: BottomBarProps)
           <div className="bottom-bar-body-content">
             {/* Desktop Layout */}
             <div className="bottom-bar-desktop">
-              <div className="bottom-bar-section info">
-                <p>© 2025 Saint.Works LTD<br />All Rights Reserved</p>
-              </div>
-
-              <div className="bottom-bar-section">
-                <div className="bottom-bar-links">
-                  <a href="https://linkedin.com/saint.works" target="_blank" rel="noopener noreferrer">
-                    Linkedin
-                  </a>
-                  <a href="mailto:hello@saint.works">Contact</a>
-                  <a href="https://instagram.com/saint.works" target="_blank" rel="noopener noreferrer">
-                    Instagram
-                  </a>
+              <div className="flex">
+                <div className="bottom-bar-section info">
+                  <p>© 2025 Saint.Works LTD<br />All Rights Reserved</p>
                 </div>
-              </div>
 
-              <div className="bottom-bar-section content">
-                  <p>Saint.Works is the design practice of Creative Director Matt Saint.</p>
-                  <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic and idea-led approach to every project.</p>
-                  <p>Saint.Works collaborates with a trusted network of designers, animators, strategists and producers, bringing together the right talent to create purposeful, impactful work.</p>
-                  <p><a href="mailto:hello@saint.works">Get in touch.</a></p>
-              </div>
+                <div className="bottom-bar-section links">
+                  <div className="bottom-bar-links">
+                    <a href="https://linkedin.com/saint.works" target="_blank" rel="noopener noreferrer">
+                      Linkedin
+                    </a>
+                    <a href="mailto:hello@saint.works">Contact</a>
+                    <a href="https://instagram.com/saint.works" target="_blank" rel="noopener noreferrer">
+                      Instagram
+                    </a>
+                  </div>
+                </div>
 
-              <div className="bottom-bar-section">
-                <p>East London<br />United Kingdom</p>
+                <div className="bottom-bar-section content">
+                    <p>Saint.Works is the design practice of Creative Director Matt Saint.</p>
+                    <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic and idea-led approach to every project.</p>
+                    <p>Saint.Works collaborates with a trusted network of designers, animators, strategists and producers, bringing together the right talent to create purposeful, impactful work.</p>
+                    <p><a href="mailto:hello@saint.works">Get in touch.</a></p>
+                </div>
+
+                <div className="bottom-bar-section location">
+                  <p>East London<br />United Kingdom</p>
+                </div>
               </div>
 
               <div className="bottom-bar-section full-width">
