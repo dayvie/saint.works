@@ -6,11 +6,13 @@
 // DO NOT define $base-path here - it's injected via sassOptions.additionalData
 
 $color-dark: #080808;
-$color-bg-dark: #202020;
+$color-bg-dark: #000000;
 $color-text-primary: #DCDCDC;
+$color-text-secondary: #B7B7B7;
 $color-text-hover: rgba(255, 255, 255, 0.7);
 
 $font-size: 1rem;
+$font-size-mobile: 0.9rem;
 $font-family: "Unica77 LL", "Helvetica Neue", Arial, sans-serif;
 
 // Font Face Declaration
@@ -28,14 +30,14 @@ $font-family: "Unica77 LL", "Helvetica Neue", Arial, sans-serif;
 }
 
 $overlay-max-width: 890px;
-$overlay-margin: 50px;
-$overlay-margin-mobile: 20px;
+$overlay-margin: 20px;
+$overlay-margin-mobile: 10px;
 
-$bottom-bar-height: 45px;
-$bottom-bar-hover-height: 85px;
-$bottom-bar-expanded-height: calc(100dvh - 50px); // Use dynamic viewport height (accounts for mobile browser UI)
-$bottom-bar-expanded-height-hover-close: calc(100dvh - $bottom-bar-hover-height); // Use dynamic viewport height (accounts for mobile browser UI)
-$mobile-breakpoint: 940px;
+$bottom-bar-height: 30px;
+$bottom-bar-hover-height: $bottom-bar-height * 2;
+$bottom-bar-expanded-height: calc(100dvh - $bottom-bar-hover-height); // Use dynamic viewport height (accounts for mobile browser UI)
+$bottom-bar-expanded-height-hover-close: calc($bottom-bar-expanded-height - $bottom-bar-height); // Use dynamic viewport height (accounts for mobile browser UI)
+$mobile-breakpoint: 820px;
 $bottom-bar-column-gap: 3rem;
 
 // Root
@@ -89,12 +91,30 @@ body {
   justify-content: center;
   flex: 1;
   min-height: 0;
-  transition: transform 0.4s ease-in-out;
+  transition: transform 0.3s ;
   will-change: transform;
 }
 
 .page:has(.bottom-bar.expanded) .page-content-wrapper {
-  transform: translateY(calc(-100vh + 50px + #{$bottom-bar-height}));
+  transform: translateY(calc(-100vh + #{$bottom-bar-hover-height} + #{$bottom-bar-height}));
+}
+
+// Nudge video up when bottom bar is hovered (but not expanded)
+// Only applies on devices that support hover (desktop)
+@media (hover: hover) {
+  .page:has(.bottom-bar.hovered:not(.expanded)) .page-content-wrapper {
+    transform: translateY(calc(-1 * (#{$bottom-bar-hover-height} - #{$bottom-bar-height})));
+  }
+  
+  // Nudge video up when hovering over video background (bottom bar expanded with hover-close)
+  .page:has(.bottom-bar.expanded.hover-close) .page-content-wrapper {
+    transform: translateY(calc(-100vh + #{$bottom-bar-hover-height} + #{$bottom-bar-height} + #{$bottom-bar-height}));
+  }
+  
+  // Move full-width section down when hovering over video background (bottom bar expanded with hover-close)
+  .page:has(.bottom-bar.expanded.hover-close) .bottom-bar-section.full-width {
+    transform: translateY(#{$bottom-bar-height});
+  }
 }
 
 // Video Background
@@ -138,7 +158,7 @@ body {
   position: fixed;
   background-image: url("#{$base-path}/img/sw-logo.png");
   background-repeat: repeat-y;
-  background-position: center 25%;
+  background-position: center bottom -18%;
   background-size: contain;
   max-width: $overlay-max-width;
   width: 100%;
@@ -153,6 +173,7 @@ body {
   @media (max-width: $mobile-breakpoint) {
     max-width: calc(100% - $overlay-margin-mobile * 2);
     margin: 0 $overlay-margin-mobile;
+    background-position: center;
     left: 0;
     transform: none;
   }
@@ -174,7 +195,7 @@ body {
   height: $bottom-bar-height;
   background-color: $color-bg-dark;
   z-index: 100;
-  transition: height 0.4s ease-in-out;
+  transition: height 0.3s ;
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0;
@@ -188,7 +209,7 @@ body {
   }
 
   &.expanded {
-    height: calc(100vh - 50px); // Fallback for browsers that don't support dvh
+    height: calc(100vh - $bottom-bar-hover-height); // Fallback for browsers that don't support dvh
     height: $bottom-bar-expanded-height; // Dynamic viewport height (accounts for mobile browser UI)
     cursor: default;
     
@@ -221,13 +242,16 @@ body {
   padding: 0 $overlay-margin;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
+  .expanded & {
+    height: $bottom-bar-hover-height;
+  }
 }
 
 .bottom-bar-arrow-container {
   &.hidden {
     opacity: 0;
   }
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.3s ;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,13 +262,13 @@ body {
 .bottom-bar-arrow-icon {
   transform: translateY(0);
   // Total duration: 3.5s (pull up slow, fire down fast, bounce back, then delay) + 1s initial delay
-  animation: arrowBounce 3.5s ease-in-out 1s infinite;
+  animation: arrowBounce 3.5s  1s infinite;
   .icon {
-    width: 24px;
-    height: 24px;
+    width: 17px;
+    height: 17px;
     display: block;
-    border:1px solid $color-text-primary;
-    border-width: 0px 1px 1px 0px;
+    border:1px solid $color-text-secondary;
+    border-width: 0px 2px 2px 0px;
     transform: translate(0,-30%) rotate(45deg);
   }
 }
@@ -256,21 +280,21 @@ body {
   // Slowly pull up (like pulling back an elastic) - takes 45% of animation
   // Smooth, gradual pull
   30% {
-    transform: translateY(-3px);
+    transform: translateY(0);
   }
   45% {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
   // Quickly fire down - happens in just 3% (very fast snap)
   48% {
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   // Bounce back with elastic effect
   52% {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
   }
   56% {
-    transform: translateY(-3px);
+    transform: translateY(-1px);
   }
   
   // Return to rest and hold
@@ -290,7 +314,7 @@ body {
   font-size: $font-size;
   color: $color-text-primary;
   &.content {
-    min-width: 313px;
+    min-width: 265px;
   }
   &.info {
     min-width: 156px;
@@ -298,25 +322,25 @@ body {
 }
 
 .bottom-bar-body {
-  height: calc(100% - #{$bottom-bar-height});
+  height: calc(100% - #{$bottom-bar-hover-height});
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  transition: opacity 0.3s , visibility 0.3s ;
   
   .bottom-bar.expanded & {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition: opacity 0.2s ease-in-out 0.1s, visibility 0.2s ease-in-out 0.1s;
+    transition: opacity 0.3s  0.1s, visibility 0.3s  0.1s;
   }
 }
 
 .bottom-bar-body-content {
-  padding: 0 $overlay-margin 1rem $overlay-margin;
+  padding: 0 $overlay-margin $bottom-bar-height $overlay-margin;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -346,7 +370,7 @@ body {
   
   p {
     font-size: $font-size;
-    line-height: 1.6;
+    line-height: 1.2;
     margin-top: 0;
     margin-bottom: 0.5rem;
   }
@@ -354,7 +378,7 @@ body {
   a {
     color: $color-text-primary;
     text-decoration: underline;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.3s ;
 
     &:hover {
       opacity: 0.7;
@@ -367,6 +391,7 @@ body {
     margin-top: auto;
     margin-bottom: 0px;
     padding-top: 2rem;
+    transition: transform 0.3s;
     
     img {
       width: 100%;
@@ -377,7 +402,7 @@ body {
   }
 
   &.content {
-    width: 313px;
+    width: 265px;
     p {
       margin-bottom: 0.5rem;
     }
@@ -393,13 +418,13 @@ body {
 .bottom-bar-links {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
 
   a {
     color: $color-text-primary;
     text-decoration: none !important;
     font-size: $font-size;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.3s ;
 
     &:hover {
       opacity: 0.7;
@@ -416,8 +441,8 @@ body {
   &-item {
     a {
       color: $color-text-primary;
-      font-size: $font-size;
-      transition: opacity 0.2s ease-in-out;
+      font-size: $font-size-mobile;
+      transition: opacity 0.3s ;
       text-decoration: none !important;
 
       &:hover {
@@ -431,19 +456,35 @@ body {
 @media (max-width: $mobile-breakpoint) {
   .bottom-bar-section {
     width: 100%;
+    p {
+      font-size: $font-size-mobile;
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
   }
   .bottom-bar-header {
     padding: 0 $overlay-margin-mobile;
+    
+      .expanded & {
+        display: none;
+      }
   }
 
   .bottom-bar-content {
     grid-template-columns: 3fr 1fr;
-    gap: 1rem;
+    gap: $bottom-bar-hover-height;
   }
 
   .bottom-bar-section {
     &.content {
-      width: calc(100%/9 * 7);
+      width: 100%;
+      max-width: 260px;
+      p {
+        &:last-child {
+          margin-top: 1rem;
+        }
+      }
     }
     &.info {
       width: 100%;
@@ -461,12 +502,16 @@ body {
   .bottom-bar-mobile {
     display: flex;
     flex-direction: column;
-    padding: 0 $overlay-margin-mobile 1rem;
-    gap: 3%;
+    padding: $bottom-bar-height $overlay-margin-mobile 1rem;
+    gap: $bottom-bar-hover-height;
   }
 
   .bottom-bar-section {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+  }
+
+  .bottom-bar-body {
+    height: 100%;
   }
 
   .bottom-bar-body-content {
@@ -479,7 +524,7 @@ body {
     margin-top: 0;
 
     &-item {
-      font-size: $font-size;
+      font-size: $font-size-mobile;
     }
   }
 }
