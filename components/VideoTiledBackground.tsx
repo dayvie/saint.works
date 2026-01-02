@@ -481,7 +481,7 @@ class VideoTiledBackgroundController {
   /**
    * Update shader uniforms with current canvas and video dimensions
    * Calculates scaling factors for tiling based on video and canvas sizes.
-   * Adjusts for mobile devices with different scaling behavior.
+   * Uses "contain" approach to ensure video is never cropped.
    */
   private updateUniforms() {
     if (!this.gl || !this.activeVideo || !this.uniforms.canvasSize) return;
@@ -491,25 +491,15 @@ class VideoTiledBackgroundController {
     const videoHeight = this.activeVideo.videoHeight || 1;
 
     const canvasSize = [this.canvas.width, this.canvas.height] as const;
-    // Calculate scale to cover entire canvas (like CSS object-fit: cover)
-    const coverScale = Math.max(canvasSize[0] / videoWidth, canvasSize[1] / videoHeight);
     
-    // Mobile detection: check for touch capability or mobile user agent
-    const hasTouch = 
-      'ontouchstart' in window ||
-      (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
-    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
-    const isMobile = hasTouch || isMobileUA || window.innerWidth <= 640;
+    // Calculate scale to contain video within canvas (like CSS object-fit: contain)
+    // This ensures the video is never cropped - it will fit entirely within the viewport
+    // On tall viewports: scale is limited by width (videoWidth * scale = canvasWidth)
+    // On wide viewports: scale is limited by height (videoHeight * scale = canvasHeight)
+    const widthScale = canvasSize[0] / videoWidth;
+    const heightScale = canvasSize[1] / videoHeight;
+    const scale = Math.min(widthScale, heightScale);
     
-    // Limit video width scaling - mobile uses full width, desktop uses 75%
-    // This prevents tiles from being too large on wide screens
-    const widthLimitScale = isMobile 
-      ? canvasSize[0] / videoWidth 
-      : (canvasSize[0] * 1) / videoWidth;
-    // Use the smaller scale to ensure video fits within limits
-    const scale = Math.min(coverScale, widthLimitScale > 0 ? widthLimitScale : coverScale);
     const displayVideoSize = [videoWidth * scale, videoHeight * scale];
 
     gl.uniform2fv(this.uniforms.canvasSize, canvasSize);
