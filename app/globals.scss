@@ -79,8 +79,10 @@ body {
   align-items: center;
   justify-content: flex-start;
   overflow: hidden;
-  min-height: 100vh;
-  height: 100vh;
+  min-height: 100vh; // Fallback for browsers that don't support dvh
+  min-height: 100dvh; // Dynamic viewport height (accounts for mobile browser UI)
+  height: 100vh; // Fallback for browsers that don't support dvh
+  height: 100dvh; // Dynamic viewport height (accounts for mobile browser UI)
 }
 
 .page-content-wrapper {
@@ -96,7 +98,8 @@ body {
 }
 
 .page:has(.bottom-bar.expanded) .page-content-wrapper {
-  transform: translateY(calc(-100vh + #{$bottom-bar-hover-height} + #{$bottom-bar-height}));
+  transform: translateY(calc(-100vh + #{$bottom-bar-hover-height} + #{$bottom-bar-height})); // Fallback for browsers that don't support dvh
+  transform: translateY(calc(-100dvh + #{$bottom-bar-hover-height} + #{$bottom-bar-height})); // Dynamic viewport height (accounts for mobile browser UI)
 }
 
 // Nudge video up when bottom bar is hovered (but not expanded)
@@ -108,7 +111,8 @@ body {
   
   // Nudge video up when hovering over video background (bottom bar expanded with hover-close)
   .page:has(.bottom-bar.expanded.hover-close) .page-content-wrapper {
-    transform: translateY(calc(-100vh + #{$bottom-bar-hover-height} + #{$bottom-bar-height} + #{$bottom-bar-height}));
+    transform: translateY(calc(-100vh + #{$bottom-bar-hover-height} + #{$bottom-bar-height} + #{$bottom-bar-height})); // Fallback for browsers that don't support dvh
+    transform: translateY(calc(-100dvh + #{$bottom-bar-hover-height} + #{$bottom-bar-height} + #{$bottom-bar-height})); // Dynamic viewport height (accounts for mobile browser UI)
   }
   
   // Move full-width section down when hovering over video background (bottom bar expanded with hover-close)
@@ -122,7 +126,8 @@ body {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100vh;
+  height: 100vh; // Fallback for browsers that don't support dvh
+  height: 100dvh; // Dynamic viewport height (accounts for mobile browser UI)
   display: block;
   object-fit: cover;
   
@@ -162,7 +167,8 @@ body {
   background-size: contain;
   max-width: $overlay-max-width;
   width: 100%;
-  height: 100vh;
+  height: 100vh; // Fallback for browsers that don't support dvh
+  height: 100dvh; // Dynamic viewport height (accounts for mobile browser UI)
   flex: 1;
   min-height: 0;
   top: 0;
@@ -210,7 +216,7 @@ body {
 
   &.expanded {
     height: calc(100vh - $bottom-bar-hover-height); // Fallback for browsers that don't support dvh
-    height: $bottom-bar-expanded-height; // Dynamic viewport height (accounts for mobile browser UI)
+    height: $bottom-bar-expanded-height; // Dynamic viewport height (accounts for mobile browser UI) - uses 100dvh
     cursor: default;
     
     // Hover-close only applies on devices that support hover (desktop)
