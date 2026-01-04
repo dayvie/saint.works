@@ -117,7 +117,7 @@ body {
   
   // Move full-width section down when hovering over video background (bottom bar expanded with hover-close)
   .page:has(.bottom-bar.expanded.hover-close) .bottom-bar-section.full-width {
-    transform: translateY(#{$bottom-bar-height});
+    transform: translateY(calc(#{$bottom-bar-height} + 10px));
   }
 }
 
@@ -126,8 +126,8 @@ body {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100vh; // Fallback for browsers that don't support dvh
-  height: 100dvh; // Dynamic viewport height (accounts for mobile browser UI)
+  height: calc(100vh - $bottom-bar-height); // Fallback for browsers that don't support dvh
+  height: calc(100dvh - $bottom-bar-height); // Dynamic viewport height (accounts for mobile browser UI)
   display: block;
   object-fit: cover;
   
@@ -161,14 +161,13 @@ body {
 // Overlay
 .overlay {
   position: fixed;
-  background-image: url("#{$base-path}/img/sw-logo.png");
+  background-image: url("#{$base-path}/img/sw-desk-bg.png");
   background-repeat: repeat-y;
-  background-position: center bottom -18%;
-  background-size: contain;
-  max-width: $overlay-max-width;
+  background-position: center center;
+  background-size: auto 100%;
   width: 100%;
-  height: 100vh; // Fallback for browsers that don't support dvh
-  height: 100dvh; // Dynamic viewport height (accounts for mobile browser UI)
+  height: calc(100vh - $bottom-bar-height); // Fallback for browsers that don't support dvh
+  height: calc(100dvh - $bottom-bar-height); // Dynamic viewport height (accounts for mobile browser UI)
   flex: 1;
   min-height: 0;
   top: 0;
@@ -176,12 +175,12 @@ body {
   transform: translate(-50%);
   image-rendering: crisp-edges;
   image-rendering: -webkit-optimize-contrast;
-  @media (max-width: $mobile-breakpoint) {
-    max-width: calc(100% - $overlay-margin-mobile * 2);
-    margin: 0 $overlay-margin-mobile;
-    background-position: center;
+  @media (max-aspect-ratio: 1850/2127) {
     left: 0;
     transform: none;
+    background-image: url("#{$base-path}/img/sw-mob-bg.png");
+    background-position: center bottom;
+    background-size: contain;
   }
   
   // Hover styles only apply on devices that support hover (desktop)
@@ -270,8 +269,8 @@ body {
   // Total duration: 3.5s (pull up slow, fire down fast, bounce back, then delay) + 1s initial delay
   animation: arrowBounce 3.5s  1s infinite;
   .icon {
-    width: 17px;
-    height: 17px;
+    width: 13px;
+    height: 13px;
     display: block;
     border:1px solid $color-text-secondary;
     border-width: 0px 2px 2px 0px;
@@ -346,7 +345,7 @@ body {
 }
 
 .bottom-bar-body-content {
-  padding: 0 $overlay-margin $bottom-bar-height $overlay-margin;
+  padding: 0 $overlay-margin $bottom-bar-hover-height $overlay-margin;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -397,6 +396,7 @@ body {
     margin-top: auto;
     margin-bottom: 0px;
     padding-top: 2rem;
+    // padding-bottom: 20px;
     transition: transform 0.3s;
     
     img {
@@ -494,6 +494,9 @@ body {
     }
     &.info {
       width: 100%;
+    }
+    &.full-width {
+      padding-bottom: 0;
     }
   }
 

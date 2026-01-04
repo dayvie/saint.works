@@ -500,7 +500,26 @@ class VideoTiledBackgroundController {
     const heightScale = canvasSize[1] / videoHeight;
     const scale = Math.min(widthScale, heightScale);
     
-    const displayVideoSize = [videoWidth * scale, videoHeight * scale];
+    // Apply padding as a percentage of canvas size
+    // e.g., 0.02 = 2% padding (1% on each side)
+    const paddingPercent = 0.05; // % padding - adjust this value as needed
+    
+    // Calculate padding in canvas pixels (percentage of each dimension)
+    const paddingWidth = canvasSize[0] * paddingPercent * 2; 
+    const paddingHeight = canvasSize[1] * paddingPercent * 2;
+    
+    // Reduce effective canvas size by padding
+    const effectiveCanvasSize: [number, number] = [
+      canvasSize[0] - paddingWidth,
+      canvasSize[1] - paddingHeight
+    ];
+    
+    // Recalculate scale with reduced canvas size
+    const effectiveWidthScale = effectiveCanvasSize[0] / videoWidth;
+    const effectiveHeightScale = effectiveCanvasSize[1] / videoHeight;
+    const effectiveScale = Math.min(effectiveWidthScale, effectiveHeightScale);
+    
+    const displayVideoSize = [videoWidth * effectiveScale, videoHeight * effectiveScale];
 
     gl.uniform2fv(this.uniforms.canvasSize, canvasSize);
     gl.uniform2fv(this.uniforms.displayVideoSize, displayVideoSize);
@@ -656,7 +675,7 @@ export default function VideoTiledBackground() {
       <video
         ref={landscapeRef}
         className="bg-video"
-        src={getAssetPath("desktop-bg.mp4")}
+        src={getAssetPath("bg-reel.mp4")}
         muted
         loop
         playsInline
@@ -666,7 +685,7 @@ export default function VideoTiledBackground() {
       <video
         ref={portraitRef}
         className="bg-video"
-        src={getAssetPath("desktop-bg.mp4")}
+        src={getAssetPath("bg-reel.mp4")}
         muted
         loop
         playsInline
