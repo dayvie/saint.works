@@ -8,14 +8,36 @@ This guide explains how to optimize your video files for the web to reduce file 
 
 FFmpeg is a powerful command-line tool for video encoding. Install it from [ffmpeg.org](https://ffmpeg.org/download.html).
 
+**Important Notes:**
+- For VP9 2-pass encoding: Use `-b:v` (bitrate) OR `-crf` with `-b:v 0` (quality mode), not both
+- For H.264: `-crf` sets quality target, `-maxrate` caps bitrate (both can be used together)
+- AV1 encoding is very slow but produces smallest files - consider encoding overnight
+- Always test encoded videos in target browsers before deploying
+
 #### Optimize Desktop Video (Landscape)
 
+**Compatibility: H.264 (MP4) > VP9 (WebM) > AV1 (WebM)**
+
 ```bash
-# Create optimized WebM (VP9) - best compression (~30-50% smaller than H.264)
+# Option 1: AV1 (WebM) - BEST compression (~40-60% smaller than H.264)
+# Compatibility: Chrome 70+, Firefox 93+, Edge 79+, Opera 57+ (Safari: Limited)
+# Note: Encoding is very slow (10-100x slower than H.264)
+ffmpeg -i bg-reel-original.mp4 \
+  -c:v libaom-av1 \
+  -crf 30 \
+  -b:v 0 \
+  -cpu-used 4 \
+  -row-mt 1 \
+  -tiles 2x2 \
+  -an \
+  bg-reel.av1.webm
+
+# Option 2: VP9 (WebM) - GOOD compression (~30-50% smaller than H.264)
+# Compatibility: Chrome 29+, Firefox 28+, Edge 79+, Opera 16+, Safari 14.1+
+# Recommended: Best balance of compression and encoding speed
 ffmpeg -i bg-reel-original.mp4 \
   -c:v libvpx-vp9 \
   -b:v 2M \
-  -crf 30 \
   -pass 1 \
   -an \
   -f webm \
@@ -24,17 +46,17 @@ ffmpeg -i bg-reel-original.mp4 \
 ffmpeg -i bg-reel-original.mp4 \
   -c:v libvpx-vp9 \
   -b:v 2M \
-  -crf 30 \
   -pass 2 \
   -an \
-  bg-reel.webm
+  bg-reel.vp9.webm
 
-# Create optimized MP4 (H.264) - universal fallback
+# Option 3: H.264 (MP4) - UNIVERSAL compatibility (largest file size)
+# Compatibility: All modern browsers (Chrome, Firefox, Safari, Edge, Opera)
+# Required: Use as fallback for maximum compatibility
 ffmpeg -i bg-reel-original.mp4 \
   -c:v libx264 \
   -preset slow \
   -crf 23 \
-  -b:v 2M \
   -maxrate 3M \
   -bufsize 4M \
   -an \
@@ -44,35 +66,53 @@ ffmpeg -i bg-reel-original.mp4 \
 
 #### Optimize Mobile Video (Portrait)
 
+**Compatibility: H.264 (MP4) > VP9 (WebM) > AV1 (WebM)**
+
+For mobile, use lower resolution and bitrate to reduce file size.
+
 ```bash
-# For mobile, use lower resolution and bitrate
-# WebM version
+# Mobile video filter (maintains aspect ratio, pads to portrait)
+SCALE_FILTER="scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2"
+
+# Option 1: AV1 (WebM) - BEST compression for mobile
+# Compatibility: Chrome 70+, Firefox 93+, Edge 79+ (Safari: Limited)
 ffmpeg -i bg-reel-original.mp4 \
-  -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" \
+  -vf "$SCALE_FILTER" \
+  -c:v libaom-av1 \
+  -crf 32 \
+  -b:v 0 \
+  -cpu-used 4 \
+  -row-mt 1 \
+  -tiles 2x2 \
+  -an \
+  bg-reel-mobile.av1.webm
+
+# Option 2: VP9 (WebM) - GOOD compression for mobile
+# Compatibility: Chrome 29+, Firefox 28+, Edge 79+, Safari 14.1+
+ffmpeg -i bg-reel-original.mp4 \
+  -vf "$SCALE_FILTER" \
   -c:v libvpx-vp9 \
   -b:v 1M \
-  -crf 32 \
   -pass 1 \
   -an \
   -f webm \
   /dev/null
 
 ffmpeg -i bg-reel-original.mp4 \
-  -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" \
+  -vf "$SCALE_FILTER" \
   -c:v libvpx-vp9 \
   -b:v 1M \
-  -crf 32 \
   -pass 2 \
   -an \
-  bg-reel-mobile.webm
+  bg-reel-mobile.vp9.webm
 
-# MP4 version
+# Option 3: H.264 (MP4) - UNIVERSAL compatibility for mobile
+# Compatibility: All modern browsers
 ffmpeg -i bg-reel-original.mp4 \
-  -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" \
+  -vf "$SCALE_FILTER" \
   -c:v libx264 \
   -preset slow \
   -crf 25 \
-  -b:v 1M \
   -maxrate 1.5M \
   -bufsize 2M \
   -an \
@@ -104,22 +144,27 @@ ffmpeg -i bg-reel-original.mp4 \
 
 ## Encoding Settings Explained
 
-### Codecs
+### Codecs (Ordered by Compatibility)
 
-1. **VP9 (WebM)**: 
-   - Best compression (30-50% smaller than H.264)
-   - Supported by Chrome, Firefox, Edge, Opera
-   - Use for primary format
+1. **H.264 (MP4)** - MOST COMPATIBLE ⭐
+   - Universal browser support (Chrome, Firefox, Safari, Edge, Opera)
+   - Largest file size but guaranteed compatibility
+   - Use as final fallback for maximum compatibility
+   - Encoding: Fast
 
-2. **H.264 (MP4)**:
-   - Universal browser support
-   - Larger file size but guaranteed compatibility
-   - Use as fallback
+2. **VP9 (WebM)** - GOOD COMPATIBILITY ⭐⭐
+   - Supported by Chrome 29+, Firefox 28+, Edge 79+, Opera 16+, Safari 14.1+
+   - 30-50% smaller than H.264
+   - Best balance of compression and browser support
+   - Encoding: Medium speed
+   - **Recommended for most use cases**
 
-3. **AV1 (WebM)**:
-   - Even better compression than VP9 (40-60% smaller)
-   - Limited browser support (Chrome, Firefox, Edge)
-   - Future-proof option
+3. **AV1 (WebM)** - BEST COMPRESSION ⭐⭐⭐
+   - Supported by Chrome 70+, Firefox 93+, Edge 79+, Opera 57+ (Safari: Limited)
+   - 40-60% smaller than H.264, 10-20% smaller than VP9
+   - Future-proof but limited current browser support
+   - Encoding: Very slow (10-100x slower than H.264)
+   - Use when file size is critical and you can provide fallbacks
 
 ### Bitrate Guidelines
 
@@ -163,32 +208,29 @@ After encoding, update `lib/constants.ts`:
 ```typescript
 export const VIDEO_PATHS: VideoPathsConfig = {
   desktop: {
-    webm: "bg-reel.webm",  // Your optimized WebM file
-    mp4: "bg-reel.mp4",    // Your optimized MP4 file
+    av1: "bg-reel.av1.webm",  // Optional: AV1 (best compression)
+    vp9: "bg-reel.vp9.webm",  // Optional: VP9 (good compression)
+    h264: "bg-reel.mp4",      // Required: H.264 (universal fallback)
   },
   mobile: {
-    webm: "bg-reel-mobile.webm",  // Optional mobile WebM
-    mp4: "bg-reel-mobile.mp4",    // Optional mobile MP4
+    av1: "bg-reel-mobile.av1.webm",  // Optional: Mobile AV1
+    vp9: "bg-reel-mobile.vp9.webm",  // Optional: Mobile VP9
+    h264: "bg-reel-mobile.mp4",      // Optional: Mobile H.264
   },
 };
 ```
 
-## Advanced: AV1 Codec (Future-Proof)
+**Note**: The component automatically detects browser support and selects the best available format. You only need to provide the formats you've encoded - the component handles the rest!
 
-For even better compression (when browser support improves):
+## Format Selection Strategy
 
-```bash
-# AV1 encoding (requires libaom-av1)
-ffmpeg -i bg-reel-original.mp4 \
-  -c:v libaom-av1 \
-  -crf 30 \
-  -b:v 0 \
-  -cpu-used 4 \
-  -an \
-  bg-reel.av1.webm
-```
+The component automatically detects browser support and selects the best format:
 
-Note: AV1 encoding is very slow but produces the smallest files.
+1. **AV1** (if supported) → Smallest file size
+2. **VP9** (if AV1 not supported) → Good compression
+3. **H.264** (fallback) → Universal compatibility
+
+This ensures users get the best compression their browser supports while maintaining compatibility.
 
 ## Troubleshooting
 

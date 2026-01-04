@@ -4,26 +4,69 @@ import { useEffect, useRef } from "react";
 import { getAssetPath, VIDEO_PATHS, VideoFormats } from "../lib/constants";
 
 /**
- * Helper function to set video sources with format fallbacks
- * Sets WebM source first (better compression) and MP4 as fallback (universal support)
+ * Detect browser support for video codecs
+ * Returns the best supported format in order: AV1 > VP9 > H.264
+ */
+function detectVideoCodecSupport(): {
+  supportsAV1: boolean;
+  supportsVP9: boolean;
+  supportsH264: boolean;
+} {
+  if (typeof window === "undefined" || !document.createElement) {
+    // Server-side or no DOM - assume minimal support
+    return { supportsAV1: false, supportsVP9: false, supportsH264: true };
+  }
+
+  const video = document.createElement("video");
+  
+  // Check AV1 support
+  const supportsAV1 = video.canPlayType('video/webm; codecs="av01.0.05M.08"') !== "";
+  
+  // Check VP9 support
+  const supportsVP9 = video.canPlayType('video/webm; codecs="vp9"') !== "";
+  
+  // Check H.264 support (should always be true, but check anyway)
+  const supportsH264 = video.canPlayType('video/mp4; codecs="avc1.42E01E"') !== "" ||
+                       video.canPlayType('video/mp4') !== "";
+
+  return { supportsAV1, supportsVP9, supportsH264 };
+}
+
+/**
+ * Helper function to set video sources with intelligent format selection
+ * Automatically selects the best format based on browser support:
+ * Priority: AV1 (best compression) > VP9 (good compression) > H.264 (universal)
  */
 function setVideoSources(video: HTMLVideoElement, formats: VideoFormats) {
   // Clear existing sources
   video.innerHTML = "";
   
-  // Add WebM source if available (better compression, ~30-50% smaller)
-  if (formats.webm) {
-    const webmSource = document.createElement("source");
-    webmSource.src = getAssetPath(formats.webm);
-    webmSource.type = "video/webm";
-    video.appendChild(webmSource);
+  const codecSupport = detectVideoCodecSupport();
+  
+  // Add sources in order of preference (browser will use first supported format)
+  // 1. AV1 (best compression) - if browser supports it and file exists
+  if (codecSupport.supportsAV1 && formats.av1) {
+    const av1Source = document.createElement("source");
+    av1Source.src = getAssetPath(formats.av1);
+    av1Source.type = 'video/webm; codecs="av01.0.05M.08"';
+    video.appendChild(av1Source);
   }
   
-  // Add MP4 source as fallback (universal browser support)
-  const mp4Source = document.createElement("source");
-  mp4Source.src = getAssetPath(formats.mp4);
-  mp4Source.type = "video/mp4";
-  video.appendChild(mp4Source);
+  // 2. VP9 (good compression) - if browser supports it and file exists
+  if (codecSupport.supportsVP9 && formats.vp9) {
+    const vp9Source = document.createElement("source");
+    vp9Source.src = getAssetPath(formats.vp9);
+    vp9Source.type = 'video/webm; codecs="vp9"';
+    video.appendChild(vp9Source);
+  }
+  
+  // 3. H.264 (universal fallback) - always include as final fallback
+  if (formats.h264) {
+    const h264Source = document.createElement("source");
+    h264Source.src = getAssetPath(formats.h264);
+    h264Source.type = 'video/mp4; codecs="avc1.42E01E"';
+    video.appendChild(h264Source);
+  }
 }
 
 /**
@@ -679,8 +722,9 @@ class VideoTiledBackgroundController {
  * - Only preloads the active video fully
  * - Lazy loads video sources based on initial viewport
  * - Supports mobile-specific video files
- * - Uses WebM format (VP9) for better compression with MP4 (H.264) fallback
- * - Browser automatically selects best supported format
+ * - Intelligent codec selection: AV1 (best) > VP9 (good) > H.264 (universal)
+ * - Automatically detects browser support and uses optimal format
+ * - Reduces bandwidth by 30-60% for modern browsers
  */
 export default function VideoTiledBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
