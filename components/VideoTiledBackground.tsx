@@ -124,10 +124,16 @@ class VideoTiledBackgroundController {
   private activeVideo: HTMLVideoElement | null = null;
   // Flag to indicate if video texture needs to be uploaded to GPU
   private needsTextureUpload = false;
+  // Flag to track if video has loaded metadata (for showing first frame in Safari)
+  private videoMetadataLoaded = false;
   // RequestAnimationFrame handle for the render loop
   private animationHandle: number | null = null;
   // Media query for orientation changes
   private mediaQuery: MediaQueryList | null = null;
+  // Track if user interaction has occurred (required for Safari autoplay)
+  private hasUserInteracted: boolean = false;
+  // User interaction handler
+  private handleUserInteraction: () => void;
   // Resize event handler
   private handleResize: () => void;
   // Orientation change event handler
@@ -168,6 +174,54 @@ class VideoTiledBackgroundController {
       } else {
         this.enableFallbackVideo();
       }
+    };
+
+    // Handle user interaction - required for autoplay policies
+    // Browsers block autoplay until user interacts
+    this.handleUserInteraction = () => {
+      if (this.hasUserInteracted) return;
+      
+      this.hasUserInteracted = true;
+      
+      // Try to play all videos (active and inactive) to ensure one starts
+      const playAllVideos = async () => {
+        if (this.activeVideo) {
+          // Force play the active video
+          try {
+            this.activeVideo.play().catch(() => {});
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+        
+        // Also try to play both videos to ensure one works
+        if (this.videos.landscape) {
+          try {
+            this.videos.landscape.play().catch(() => {});
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+        if (this.videos.portrait) {
+          try {
+            this.videos.portrait.play().catch(() => {});
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+        
+        // If no active video yet, try to select and play
+        if (!this.activeVideo) {
+          void this.selectVideo();
+        }
+      };
+      
+      // Play immediately and also after a short delay (Safari sometimes needs this)
+      playAllVideos();
+      setTimeout(playAllVideos, 50);
+      
+      // Remove event listeners after first interaction
+      this.removeUserInteractionListeners();
     };
   }
 
@@ -214,6 +268,9 @@ class VideoTiledBackgroundController {
       }
     }
 
+    // Remove user interaction listeners
+    this.removeUserInteractionListeners();
+
     this.disposeGL();
     this.pauseVideo(this.activeVideo);
   }
@@ -229,6 +286,7 @@ class VideoTiledBackgroundController {
       video.muted = true;
       video.playsInline = true;
       video.setAttribute("playsinline", "");
+      video.loop = true;
       // Set preload to metadata for inactive videos to save bandwidth
       // The active video will be set to "auto" in selectVideo()
       video.preload = "metadata";
@@ -247,6 +305,34 @@ class VideoTiledBackgroundController {
         this.mediaQuery.addListener(this.handleOrientation);
       }
     }
+    
+    // Attach user interaction listeners for Safari autoplay
+    this.attachUserInteractionListeners();
+  }
+
+  /**
+   * Attach user interaction listeners to enable video playback
+   * Browsers require user interaction before allowing video playback
+   */
+  private attachUserInteractionListeners() {
+    // Listen to multiple interaction events to catch any user action
+    const events = ["click", "touchstart", "touchend", "mousedown", "keydown"];
+    const options = { passive: true, once: true };
+    
+    events.forEach((event) => {
+      document.addEventListener(event, this.handleUserInteraction, options);
+    });
+  }
+
+  /**
+   * Remove user interaction listeners after first interaction
+   */
+  private removeUserInteractionListeners() {
+    const events = ["click", "touchstart", "touchend", "mousedown", "keydown"];
+    
+    events.forEach((event) => {
+      document.removeEventListener(event, this.handleUserInteraction);
+    });
   }
 
   /**
@@ -491,9 +577,13 @@ class VideoTiledBackgroundController {
     // Switch videos
     this.pauseVideo(this.activeVideo);
     
+    // Reset metadata flag when switching videos
+    this.videoMetadataLoaded = false;
+    
     // Optimize preload: active video gets full preload, inactive gets metadata only
     if (target) {
       target.preload = "auto";
+      target.load();
     }
     if (inactive) {
       inactive.preload = "metadata";
@@ -502,7 +592,18 @@ class VideoTiledBackgroundController {
     this.activeVideo = target;
 
     await this.ensureVideoReady(target);
-    await this.playVideo(target);
+    
+    // Only try to play if user has interacted (browser autoplay policy)
+    // If not, wait for user interaction
+    if (this.hasUserInteracted) {
+      await this.playVideo(target);
+    } else {
+      // Try to play anyway - might work in some browsers
+      // If it fails, user interaction handler will retry
+      this.playVideo(target).catch(() => {
+        // Expected to fail - will be handled by user interaction
+      });
+    }
 
     // Remove fallback class (used when WebGL is unavailable)
     target.classList.remove("bg-video-fallback");
@@ -565,9 +666,14 @@ class VideoTiledBackgroundController {
    * Uses "contain" approach to ensure video is never cropped.
    */
   private updateUniforms() {
-    if (!this.gl || !this.activeVideo || !this.uniforms.canvasSize) return;
+    if (!this.gl || !this.program || !this.activeVideo || !this.uniforms.canvasSize) return;
 
     const gl = this.gl;
+    
+    // CRITICAL: Ensure program is active before setting uniforms
+    // Safari is strict about this and will throw INVALID_OPERATION if program isn't active
+    gl.useProgram(this.program);
+    
     const videoWidth = this.activeVideo.videoWidth || 1;
     const videoHeight = this.activeVideo.videoHeight || 1;
 
@@ -622,6 +728,9 @@ class VideoTiledBackgroundController {
       return;
     }
 
+    // Ensure program is active before any WebGL operations
+    gl.useProgram(this.program);
+
     // Clear canvas to black
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -632,20 +741,30 @@ class VideoTiledBackgroundController {
 
     // Upload new video frame to texture if needed
     // Only uploads when video has a new frame or forced by needsTextureUpload flag
+    // Also uploads if metadata is loaded (for Safari first frame display)
     if (this.needsTextureUpload || this.videoHasNewFrame()) {
-      this.needsTextureUpload = false;
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        this.activeVideo
-      );
+      // Only upload if video has valid dimensions (Safari requirement)
+      if (this.activeVideo.videoWidth > 0 && this.activeVideo.videoHeight > 0) {
+        this.needsTextureUpload = false;
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          this.activeVideo
+        );
+      }
     }
 
     // Update uniforms and draw
     this.updateUniforms();
+    
+    // Ensure position buffer is bound before drawing
+    if (this.positionLocation !== null && this.positionBuffer) {
+      this.bindPositionBuffer(this.positionLocation);
+    }
+    
     // Draw 6 vertices (2 triangles forming fullscreen quad)
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -655,11 +774,14 @@ class VideoTiledBackgroundController {
 
   /**
    * Check if video has a new frame available
-   * @returns true if video is playing and has new frame data
+   * @returns true if video is playing and has new frame data, or if metadata is loaded (for first frame display)
    */
   private videoHasNewFrame() {
     if (!this.activeVideo) return false;
-    return !this.activeVideo.paused && !this.activeVideo.ended;
+    // Return true if video is playing, OR if metadata is loaded (for Safari first frame)
+    // Safari needs this to show the first frame even when video is paused
+    return (!this.activeVideo.paused && !this.activeVideo.ended) || 
+           (this.videoMetadataLoaded && this.activeVideo.readyState >= 2);
   }
 
   /**
@@ -672,16 +794,36 @@ class VideoTiledBackgroundController {
     return new Promise<void>((resolve) => {
       // readyState >= 2 means we have metadata (dimensions available)
       if (video.readyState >= 2 && video.videoWidth && video.videoHeight) {
+        this.videoMetadataLoaded = true;
+        // Force texture upload to show first frame in Safari
+        this.needsTextureUpload = true;
         resolve();
         return;
       }
 
+      const hasSources = video.querySelectorAll("source").length > 0 || video.src;
+      if (!hasSources) {
+        console.warn("Video has no sources, cannot load");
+        resolve(); // Resolve anyway to prevent hanging
+        return;
+      }
+
       const onLoaded = () => {
-        video.removeEventListener("loadeddata", onLoaded);
-        resolve();
+        if (video.videoWidth && video.videoHeight) {
+          this.videoMetadataLoaded = true;
+          // Force texture upload to show first frame in Safari
+          this.needsTextureUpload = true;
+          video.removeEventListener("loadeddata", onLoaded);
+          video.removeEventListener("loadedmetadata", onLoaded);
+          video.removeEventListener("canplay", onLoaded);
+          resolve();
+        }
       };
 
       video.addEventListener("loadeddata", onLoaded, { once: true });
+      video.addEventListener("loadedmetadata", onLoaded, { once: true });
+      video.addEventListener("canplay", onLoaded, { once: true });
+
       video.load();
     });
   }
@@ -693,6 +835,9 @@ class VideoTiledBackgroundController {
    */
   private async playVideo(video: HTMLVideoElement | null) {
     if (!video) return;
+    
+    video.loop = true;
+    
     try {
       await video.play();
     } catch (error) {
@@ -751,6 +896,9 @@ export default function VideoTiledBackground() {
       setVideoSources(landscapeRef.current, desktopVideo);
       // Only preload landscape if it's the initial orientation
       landscapeRef.current.preload = useLandscape ? "auto" : "metadata";
+      if (useLandscape) {
+        landscapeRef.current.load();
+      }
     }
     
     // Set sources for portrait video
@@ -758,6 +906,9 @@ export default function VideoTiledBackground() {
       setVideoSources(portraitRef.current, mobileVideo);
       // Only preload portrait if it's the initial orientation
       portraitRef.current.preload = useLandscape ? "metadata" : "auto";
+      if (!useLandscape) {
+        portraitRef.current.load();
+      }
     }
 
     // Create controller instance
