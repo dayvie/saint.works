@@ -1,7 +1,30 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { getAssetPath, VIDEO_PATHS } from "../lib/constants";
+import { getAssetPath, VIDEO_PATHS, VideoFormats } from "../lib/constants";
+
+/**
+ * Helper function to set video sources with format fallbacks
+ * Sets WebM source first (better compression) and MP4 as fallback (universal support)
+ */
+function setVideoSources(video: HTMLVideoElement, formats: VideoFormats) {
+  // Clear existing sources
+  video.innerHTML = "";
+  
+  // Add WebM source if available (better compression, ~30-50% smaller)
+  if (formats.webm) {
+    const webmSource = document.createElement("source");
+    webmSource.src = getAssetPath(formats.webm);
+    webmSource.type = "video/webm";
+    video.appendChild(webmSource);
+  }
+  
+  // Add MP4 source as fallback (universal browser support)
+  const mp4Source = document.createElement("source");
+  mp4Source.src = getAssetPath(formats.mp4);
+  mp4Source.type = "video/mp4";
+  video.appendChild(mp4Source);
+}
 
 /**
  * Type definitions for video elements
@@ -656,6 +679,8 @@ class VideoTiledBackgroundController {
  * - Only preloads the active video fully
  * - Lazy loads video sources based on initial viewport
  * - Supports mobile-specific video files
+ * - Uses WebM format (VP9) for better compression with MP4 (H.264) fallback
+ * - Browser automatically selects best supported format
  */
 export default function VideoTiledBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -677,14 +702,16 @@ export default function VideoTiledBackground() {
     const desktopVideo = VIDEO_PATHS.desktop;
     const mobileVideo = VIDEO_PATHS.mobile || desktopVideo; // Fallback to desktop if no mobile video
     
+    // Set sources for landscape video (WebM first for better compression, MP4 as fallback)
     if (landscapeRef.current) {
-      landscapeRef.current.src = getAssetPath(desktopVideo);
+      setVideoSources(landscapeRef.current, desktopVideo);
       // Only preload landscape if it's the initial orientation
       landscapeRef.current.preload = useLandscape ? "auto" : "metadata";
     }
     
+    // Set sources for portrait video
     if (portraitRef.current) {
-      portraitRef.current.src = getAssetPath(mobileVideo);
+      setVideoSources(portraitRef.current, mobileVideo);
       // Only preload portrait if it's the initial orientation
       portraitRef.current.preload = useLandscape ? "metadata" : "auto";
     }
