@@ -85,6 +85,71 @@ export default function HomePage() {
     };
   }, [isBottomBarExpanded, isMobile]);
 
+  // Handle swipe-up gesture on mobile to open bottom bar
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const glBackground = document.querySelectorAll("#gl-background, main.overlay");
+    if (!glBackground || glBackground.length === 0) return;
+
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    const MIN_SWIPE_DISTANCE = 100; // Minimum pixels for significant swipe
+    const MAX_SWIPE_TIME = 500; // Maximum milliseconds for swipe gesture
+
+    const handleTouchStart = (e: Event) => {
+      const touchEvent = e as TouchEvent;
+      // Only track if bottom bar is closed
+      if (isBottomBarExpanded) return;
+      
+      if (touchEvent.touches.length === 1) {
+        touchStartY = touchEvent.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
+    };
+
+    const handleTouchEnd = (e: Event) => {
+      const touchEvent = e as TouchEvent;
+      // Only process if bottom bar is closed and we have a valid start position
+      if (isBottomBarExpanded || touchStartY === 0) {
+        touchStartY = 0;
+        return;
+      }
+
+      if (touchEvent.changedTouches.length === 1) {
+        const touchEndY = touchEvent.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+        const swipeDistance = touchStartY - touchEndY; // Positive = upward swipe
+        const swipeTime = touchEndTime - touchStartTime;
+
+        // Check if it's a significant upward swipe
+        if (
+          swipeDistance >= MIN_SWIPE_DISTANCE &&
+          swipeTime <= MAX_SWIPE_TIME
+        ) {
+          touchEvent.preventDefault();
+          touchEvent.stopPropagation();
+          setIsBottomBarExpanded(true);
+        }
+      }
+
+      touchStartY = 0;
+      touchStartTime = 0;
+    };
+
+    for (const element of Array.from(glBackground)) {
+      element.addEventListener("touchstart", handleTouchStart, { passive: true });
+      element.addEventListener("touchend", handleTouchEnd, { passive: false });
+    }
+
+    return () => {
+      for (const element of Array.from(glBackground)) {
+        element.removeEventListener("touchstart", handleTouchStart);
+        element.removeEventListener("touchend", handleTouchEnd);
+      }
+    };
+  }, [isMobile, isBottomBarExpanded]);
+
   return (
     <div className="page">
       <div className="page-content-wrapper">
