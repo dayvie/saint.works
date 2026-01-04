@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { getAssetPath } from "../lib/constants";
+import { getAssetPath, VIDEO_PATHS } from "../lib/constants";
 
 /**
  * Type definitions for video elements
@@ -155,6 +155,7 @@ class VideoTiledBackgroundController {
   /**
    * Prepare video elements for playback
    * Sets up videos to be muted and play inline (required for autoplay in most browsers).
+   * Optimizes preload strategy - only the active video gets full preload.
    */
   private prepareVideos() {
     Object.values(this.videos).forEach((video) => {
@@ -162,6 +163,9 @@ class VideoTiledBackgroundController {
       video.muted = true;
       video.playsInline = true;
       video.setAttribute("playsinline", "");
+      // Set preload to metadata for inactive videos to save bandwidth
+      // The active video will be set to "auto" in selectVideo()
+      video.preload = "metadata";
     });
   }
 
@@ -398,6 +402,7 @@ class VideoTiledBackgroundController {
    * Select appropriate video based on viewport orientation
    * Chooses landscape or portrait video based on aspect ratio.
    * Prepares video for WebGL rendering.
+   * Optimizes preload strategy - only loads the active video fully.
    */
   private async selectVideo() {
     const { landscape, portrait } = this.videos;
@@ -407,6 +412,7 @@ class VideoTiledBackgroundController {
     const viewportRatio = window.innerWidth / window.innerHeight || 1;
     const useLandscape = viewportRatio >= 1;
     const target = useLandscape ? landscape : portrait;
+    const inactive = useLandscape ? portrait : landscape;
 
     if (!target) {
       this.enableFallbackVideo();
@@ -418,6 +424,15 @@ class VideoTiledBackgroundController {
 
     // Switch videos
     this.pauseVideo(this.activeVideo);
+    
+    // Optimize preload: active video gets full preload, inactive gets metadata only
+    if (target) {
+      target.preload = "auto";
+    }
+    if (inactive) {
+      inactive.preload = "metadata";
+    }
+
     this.activeVideo = target;
 
     await this.ensureVideoReady(target);
@@ -637,6 +652,10 @@ class VideoTiledBackgroundController {
  * Falls back to standard HTML5 video if WebGL is unavailable.
  * 
  * Uses two video elements (landscape and portrait) and a canvas for WebGL rendering.
+ * Performance optimizations:
+ * - Only preloads the active video fully
+ * - Lazy loads video sources based on initial viewport
+ * - Supports mobile-specific video files
  */
 export default function VideoTiledBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -646,6 +665,29 @@ export default function VideoTiledBackground() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Determine initial video sources based on viewport
+    // This prevents loading both videos immediately
+    const viewportRatio = typeof window !== "undefined" 
+      ? window.innerWidth / window.innerHeight || 1 
+      : 1;
+    const useLandscape = viewportRatio >= 1;
+    
+    // Set initial video sources - only load what's needed
+    const desktopVideo = VIDEO_PATHS.desktop;
+    const mobileVideo = VIDEO_PATHS.mobile || desktopVideo; // Fallback to desktop if no mobile video
+    
+    if (landscapeRef.current) {
+      landscapeRef.current.src = getAssetPath(desktopVideo);
+      // Only preload landscape if it's the initial orientation
+      landscapeRef.current.preload = useLandscape ? "auto" : "metadata";
+    }
+    
+    if (portraitRef.current) {
+      portraitRef.current.src = getAssetPath(mobileVideo);
+      // Only preload portrait if it's the initial orientation
+      portraitRef.current.preload = useLandscape ? "metadata" : "auto";
+    }
 
     // Create controller instance
     const controller = new VideoTiledBackgroundController({
@@ -675,21 +717,19 @@ export default function VideoTiledBackground() {
       <video
         ref={landscapeRef}
         className="bg-video"
-        src={getAssetPath("bg-reel.mp4")}
         muted
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
       />
       {/* Portrait orientation video (hidden by default, shown when WebGL unavailable) */}
       <video
         ref={portraitRef}
         className="bg-video"
-        src={getAssetPath("bg-reel.mp4")}
         muted
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
       />
     </>
   );
