@@ -247,6 +247,7 @@ body {
   padding: 0 $overlay-margin;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
+  transition: height 0.3s;
   .expanded & {
     height: $bottom-bar-hover-height;
   }
@@ -256,7 +257,7 @@ body {
   &.hidden {
     opacity: 0;
   }
-  transition: opacity 0.3s ;
+  transition: opacity 0.1s ;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -396,8 +397,14 @@ body {
     margin-top: auto;
     margin-bottom: 0px;
     padding-top: 2rem;
+    transform: translateY(100%);
     // padding-bottom: 20px;
-    transition: transform 0.3s;
+    transition: all 0.3s;
+    opacity: 0;
+    .page:has(.bottom-bar.expanded) & {
+      opacity: 1;
+      transform: translateY(0);
+    }
     
     img {
       width: 100%;
