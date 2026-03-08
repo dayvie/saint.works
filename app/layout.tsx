@@ -35,6 +35,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/site.webmanifest" />
+        <link rel="canonical" href="https://saint.works" />
       </head>
       <body>{children}</body>
     </html>
