@@ -36,6 +36,8 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/site.webmanifest" />
         <link rel="canonical" href="https://saint.works" />
+        <title>Saint Works</title>
+        <meta name="description" content="Saint Works is the design practice of Creative Director Matt Saint." />
       </head>
       <body>{children}</body>
     </html>
