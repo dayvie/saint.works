@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.scss";
 
 export const metadata: Metadata = {
-  title: "Saint.Works",
-  description: "Creative Director Matt Saint",
+  title: "Saint Works",
+  description: "Saint Works is the design practice of Creative Director Matt Saint.",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
