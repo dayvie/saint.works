@@ -134,7 +134,7 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
                     <a href="https://www.linkedin.com/in/matt-saint-a0527279/" target="_blank" rel="noopener noreferrer">
                       Linkedin
                     </a>
-                    <a href="mailto:hello@saint.works">Contact</a>
+                    <a href="mailto:info@saint.works">Contact</a>
                     <a href="https://instagram.com/saint.works" target="_blank" rel="noopener noreferrer">
                       Instagram
                     </a>
@@ -143,9 +143,9 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
 
                 <div className="bottom-bar-section content">
                     <p>Saint Works is the design practice of Creative Director Matt Saint.</p>
-                    <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic, idea-led approach to every project</p>
+                    <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic, idea-led approach to <br />every project</p>
                     <p>Saint Works collaborates with a trusted network of designers, animators and writers, bringing together the right talent to create purposeful, impactful work.</p>
-                    <p><a href="mailto:hello@saint.works">Get in touch.</a></p>
+                    <p><a href="mailto:info@saint.works">Get in touch.</a></p>
                 </div>
 
                 <div className="bottom-bar-section location">
@@ -170,10 +170,10 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
               </div>
 
               <div className="bottom-bar-section content">
-                  <p>Saint.Works is the design practice of Creative Director Matt Saint.</p>
-                  <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic and idea-led approach to every project.</p>
-                  <p>Saint.Works collaborates with a trusted network of designers, animators, strategists and producers, bringing together the right talent to create purposeful, impactful work.</p>
-                  <p><a href="mailto:hello@saint.works">Get in touch.</a></p>
+              <p>Saint Works is the design practice of Creative Director Matt Saint.</p>
+                    <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic, idea-led approach to every project</p>
+                    <p>Saint Works collaborates with a trusted network of designers, animators and writers, bringing together the right talent to create purposeful, impactful work.</p>
+                    <p><a href="mailto:info@saint.works">Get in touch.</a></p>
               </div>
 
               <div className="bottom-bar-section bottom-bar-links-grid">
@@ -183,7 +183,7 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
                   </a>
                 </div>
                 <div className="bottom-bar-links-grid-item">
-                  <a href="mailto:hello@saint.works">Contact</a>
+                  <a href="mailto:info@saint.works">Contact</a>
                 </div>
                 <div className="bottom-bar-links-grid-item">
                   <a href="https://instagram.com/saint.works" target="_blank" rel="noopener noreferrer">
