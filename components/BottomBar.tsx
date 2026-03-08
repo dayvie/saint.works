@@ -126,7 +126,7 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
             <div className="bottom-bar-desktop">
               <div className="flex">
                 <div className="bottom-bar-section info">
-                  <p>© 2025 Saint.Works LTD<br />All Rights Reserved</p>
+                  <p>© {new Date().getFullYear()} Saint.Works LTD<br />All Rights Reserved</p>
                 </div>
 
                 <div className="bottom-bar-section links">
@@ -166,7 +166,7 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
             {/* Mobile Layout */}
             <div className="bottom-bar-mobile">
               <div className="bottom-bar-section info">
-                <p>© 2025 Saint.Works LTD<br />All Rights Reserved</p>
+                <p>© {new Date().getFullYear()} Saint.Works LTD<br />All Rights Reserved</p>
               </div>
 
               <div className="bottom-bar-section content">
