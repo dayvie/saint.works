@@ -166,7 +166,7 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
             {/* Mobile Layout */}
             <div className="bottom-bar-mobile">
               <div className="bottom-bar-section info">
-                <p>© 2025 Saint.<br />Works LTD All Rights Reserved</p>
+                <p>© 2025 Saint.Works LTD<br />All Rights Reserved</p>
               </div>
 
               <div className="bottom-bar-section content">
