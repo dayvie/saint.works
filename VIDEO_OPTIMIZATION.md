@@ -22,7 +22,7 @@ FFmpeg is a powerful command-line tool for video encoding. Install it from [ffmp
 # Option 1: AV1 (WebM) - BEST compression (~40-60% smaller than H.264)
 # Compatibility: Chrome 70+, Firefox 93+, Edge 79+, Opera 57+ (Safari: Limited)
 # Note: Encoding is very slow (10-100x slower than H.264)
-ffmpeg -i bg-reel-original.mp4 \
+ffmpeg -i bg-reel-final.mp4 \
   -c:v libaom-av1 \
   -crf 30 \
   -b:v 0 \
@@ -35,7 +35,7 @@ ffmpeg -i bg-reel-original.mp4 \
 # Option 2: VP9 (WebM) - GOOD compression (~30-50% smaller than H.264)
 # Compatibility: Chrome 29+, Firefox 28+, Edge 79+, Opera 16+, Safari 14.1+
 # Recommended: Best balance of compression and encoding speed
-ffmpeg -i bg-reel-original.mp4 \
+ffmpeg -i bg-reel-final.mp4 \
   -c:v libvpx-vp9 \
   -b:v 2M \
   -pass 1 \
@@ -43,7 +43,7 @@ ffmpeg -i bg-reel-original.mp4 \
   -f webm \
   /dev/null
 
-ffmpeg -i bg-reel-original.mp4 \
+ffmpeg -i bg-reel-final.mp4 \
   -c:v libvpx-vp9 \
   -b:v 2M \
   -pass 2 \
@@ -53,7 +53,7 @@ ffmpeg -i bg-reel-original.mp4 \
 # Option 3: H.264 (MP4) - UNIVERSAL compatibility (largest file size)
 # Compatibility: All modern browsers (Chrome, Firefox, Safari, Edge, Opera)
 # Required: Use as fallback for maximum compatibility
-ffmpeg -i bg-reel-original.mp4 \
+ffmpeg -i bg-reel-final.mp4 \
   -c:v libx264 \
   -preset slow \
   -crf 23 \
