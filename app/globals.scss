@@ -492,10 +492,16 @@ body {
   .bottom-bar-section {
     &.content {
       width: 100%;
-      max-width: 260px;
+      max-width: 251px;
       p {
         &:last-child {
           margin-top: 1rem;
+        }
+        span {
+          display: block;
+          @media (max-width: 260px) {
+            display: inline;
+          }
         }
       }
     }

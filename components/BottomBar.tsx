@@ -142,7 +142,7 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
                 </div>
 
                 <div className="bottom-bar-section content">
-                    <p>Saint Works is the design practice of Creative Director Matt Saint.</p>
+                    <p>Saint Works is the design practice <br />of Creative Director Matt Saint.</p>
                     <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic, idea-led approach to <br />every project</p>
                     <p>Saint Works collaborates with a trusted network of designers, animators and writers, bringing together the right talent to create purposeful, impactful work.</p>
                     <p><a href="mailto:info@saint.works">Get in touch.</a></p>
@@ -170,10 +170,10 @@ export default function BottomBar({ isExpanded, setIsExpanded, isGlBackgroundHov
               </div>
 
               <div className="bottom-bar-section content">
-              <p>Saint Works is the design practice of Creative Director Matt Saint.</p>
-                    <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic, idea-led approach to every project</p>
-                    <p>Saint Works collaborates with a trusted network of designers, animators and writers, bringing together the right talent to create purposeful, impactful work.</p>
-                    <p><a href="mailto:info@saint.works">Get in touch.</a></p>
+                  <p>Saint Works is the design practice <span>of Creative Director Matt Saint.</span></p>
+                  <p>With experience building brands, shaping campaigns, and leading teams for some of the world&apos;s most exciting companies, Matt brings a strategic, idea-led approach to every project</p>
+                  <p>Saint Works collaborates with a trusted network of designers, animators and writers, bringing together the right talent to create purposeful, impactful work.</p>
+                  <p><a href="mailto:info@saint.works">Get in touch.</a></p>
               </div>
 
               <div className="bottom-bar-section bottom-bar-links-grid">
